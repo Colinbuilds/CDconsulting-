@@ -24,12 +24,18 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-## Scroll build (tear-off → rebuild)
-The section under the headline runs on a real photo (`images/build/source.jpg`, a free Unsplash photo).
-`tools/build_stages.py` cuts it into stage layers (decking, underlayment, new shingles, sheathing, house wrap, new siding) that keep the photo's own lighting; `js/teardown.js` reveals them as you scroll.
+## 3D house (scroll build + visualizer)
+Both the scroll-through tear-off and the visualizer use one real-time 3D model (three.js, vendored in `js/vendor/three`, no build step).
 
-**Use your own job instead:** shoot the house straight-on, save it as `images/build/source.jpg`, retrace the roof and wall regions at the top of `tools/build_stages.py` (pixel coordinates), then run:
-```
-python3 tools/build_stages.py
-```
-New roof and siding colors are `NEW_ROOF` / `NEW_SIDING` in the same file.
+| What | Where |
+|---|---|
+| Product lines + named colors (roof, siding, trim, windows, door, gutters, stone) | `js/3d/catalog.js` → `CATALOG` |
+| Style presets / the "before" house | `PRESETS` and `ORIGINAL` in `js/3d/catalog.js` |
+| House shape (walls, windows, roofs, porch, garage) | `js/3d/house.js` |
+| Lawn, driveway, trees, shrubs | `js/3d/site.js` |
+| Scroll timeline + camera path | `T` and `KEYS` in `js/build3d.js` |
+| Visualizer UI (save, share link, download, "Price this", send to lead form) | `js/viz3d.js` |
+
+Shingles, siding profiles, decking, underlayment and house wrap are generated in code (`js/3d/textures.js`) so any product color can tint them. Lawn, concrete, pavers, stone, bark and mulch are CC0 photo textures from [Poly Haven](https://polyhaven.com) in `images/tex/`.
+
+Colors are on-screen approximations of each manufacturer's published colors; keep the "confirm with physical samples" note.

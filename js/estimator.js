@@ -135,5 +135,25 @@
     window.CD.goTo("contact");
   });
 
+  // "Price this" from the visualizer: switch on the matching jobs and materials
+  document.addEventListener("cd:estimate-prefill", (e) => {
+    const d = e.detail;
+    const pick = {
+      roof: d.roof.type === "metal" ? 2 : 0,
+      siding: d.siding.line === "hardie" ? 2 : d.siding.line === "cedar" ? 1 : 0,
+      windows: d.windows.color === "Black" ? 3 : 1,
+      gutters: d.gutters.name === "Copper" ? 3 : 0,
+      door: d.door.style === "modern" ? 3 : 0,
+    };
+    ITEMS.forEach((it) => {
+      const el = $(`.est-item[data-id="${it.id}"]`);
+      const on = it.id in pick;
+      $("input[type=checkbox]", el).checked = on;
+      el.classList.toggle("is-on", on);
+      if (on) $("[data-k=tier]", el).value = pick[it.id];
+    });
+    calc();
+  });
+
   calc();
 })();
