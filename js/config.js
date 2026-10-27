@@ -11,11 +11,9 @@ window.SITE = {
   email: "hello@example.com",          // TODO: your public email
   serviceArea: "Your City & Surrounding Counties", // TODO
 
-  // Lead form delivery.
-  // Leave empty to use Netlify Forms (works automatically when hosted on Netlify).
-  // Or paste a Formspree / Basin / Getform endpoint URL here, e.g.
-  // "https://formspree.io/f/abcdwxyz"
-  formEndpoint: "",
+  // Lead form delivery. "/api/lead" is handled by server.js (Railway).
+  // Leads are emailed when RESEND_API_KEY + LEAD_TO_EMAIL are set in Railway variables.
+  formEndpoint: "/api/lead",
 };
 
 /* --------------------------------------------------------------------------

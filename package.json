@@ -1,0 +1,16 @@
+{
+  "name": "cd-consulting",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CD Consulting website: static site + lead form server",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "busboy": "^1.6.0"
+  }
+}

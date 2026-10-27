@@ -1,6 +1,6 @@
 # CD Consulting — Construction Consultant site
 
-Static site, no build step. Open `index.html` through any web server, or deploy the folder to Netlify.
+Static site plus a tiny Node server (`server.js`) for the lead form. No build step.
 
 ## Make it yours
 | What | Where |
@@ -12,16 +12,25 @@ Static site, no build step. Open `index.html` through any web server, or deploy 
 | Estimator pricing | `ITEMS` at the top of `js/estimator.js` (installed $ ranges per unit) |
 | Visualizer colors & preset builds | `PALETTE` and `PRESETS` at the top of `js/visualizer.js` |
 
-## Lead form
-- **On Netlify:** works automatically (Netlify Forms). Submissions, photos and visualizer renders show up under *Site → Forms*; turn on email notifications there.
-- **Elsewhere:** create a free Formspree form and paste its URL into `formEndpoint` in `js/config.js`.
+## Deploy on Railway
+1. railway.com → **New Project → Deploy from GitHub repo** → `CDconsulting-` (branch `main`). Railway runs `node server.js` (see `railway.json`).
+2. Service → **Settings → Networking → Generate Domain** (or add your own domain).
+3. Service → **Variables** to receive leads by email (free at resend.com):
+   - `RESEND_API_KEY` = your Resend API key
+   - `LEAD_TO_EMAIL` = where leads go (comma-separate for several)
+   - `LEAD_FROM_EMAIL` (optional) = e.g. `CD Consulting <leads@yourdomain.com>` once your domain is verified in Resend
+   - `LEADS_DIR` (optional) = `/data` if you attach a Railway volume there, to also keep every lead + photos on disk
 
-Photos are resized in the browser (max 1600px) before upload, up to 6 per lead.
+Every lead also prints to the deploy logs (`NEW LEAD …`), so none are lost before email is set up.
+
+## Lead form
+`js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.
 
 ## Preview locally
 ```
-python3 -m http.server 8000
-# open http://localhost:8000
+npm install
+npm start
+# open http://localhost:3000
 ```
 
 ## 3D house (scroll build + visualizer)
