@@ -76,6 +76,43 @@
       </div>
     </section>
 
+    <!-- ============ SCROLL BUILD: TEAR-OFF → REBUILD ============ -->
+    <section class="teardown" id="build" aria-label="Scroll-through roof and siding replacement">
+      <div class="td-sticky">
+        <div class="wrap td-grid">
+          <header class="td-head">
+            <p class="kicker mono"><span class="dot"></span> LIVE BUILD // SCROLL TO RUN</p>
+            <h2>Tear it off.<br/><em>Build it right.</em></h2>
+          </header>
+
+          <div class="td-stage panel">
+            <div class="panel-head mono"><span>JOB // CD-2026-014</span><span>DAY <b id="tdDay">00</b></span></div>
+            <div class="td-svg-wrap">
+              <svg id="tdSvg" viewBox="0 0 800 480" role="img" aria-label="An old house has its roof and siding torn off and replaced as you scroll"></svg>
+              <div class="td-hint mono" id="tdHint">SCROLL <span>▼</span></div>
+            </div>
+          </div>
+
+          <div class="td-hud">
+            <ol class="td-phases mono">
+              <li>01 INSPECT</li><li>02 TEAR-OFF</li><li>03 DRY-IN</li><li>04 REBUILD</li><li>05 REVEAL</li>
+            </ol>
+            <div class="td-progress mono"><span id="tdPhaseLabel">PHASE 01 // INSPECT</span><i><b id="tdBar"></b></i><span id="tdPct">0%</span></div>
+            <p class="td-status" id="tdStatus" aria-live="polite"></p>
+            <dl class="td-read mono">
+              <div><dt>ROOF SQ</dt><dd id="tdRoof">0 / 28</dd></div>
+              <div><dt>SIDING</dt><dd id="tdSiding">0%</dd></div>
+            </dl>
+            <div class="td-cta" id="tdCta">
+              <a href="#visualizer" class="btn btn-blue btn-sm">Render my house →</a>
+              <a href="#estimate" class="btn btn-ghost btn-sm">Get my ballpark</a>
+            </div>
+            <input type="range" id="tdRange" class="td-range" min="0" max="1000" value="1000" aria-label="Build progress" hidden />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ SERVICES ============ -->
     <section class="section services" aria-labelledby="svc-title">
       <div class="wrap">
@@ -584,6 +621,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/teardown.js"></script>
   <script src="js/visualizer.js"></script>
   <script src="js/estimator.js"></script>
   <script src="js/lead.js"></script>
