@@ -608,10 +608,12 @@ form.lead-form > .btn, form.lead-form > .form-msg { margin: 1.2rem .9rem 0; widt
 .td-stage { grid-area: stage; overflow: hidden; min-width: 0; }
 .td-stage .panel-head b { color: var(--blue-hi); font-weight: 700; }
 .td-svg-wrap { position: relative; }
-#tdSvg { width: 100%; height: auto; max-height: calc(100svh - 300px); }
-@media (min-width: 1000px) { #tdSvg { max-height: calc(100svh - 160px); } }
-#tdSvg .td-trim, #tdSvg .td-trim-g { fill: var(--td-trim, #f1efe8); }
-#tdSvg .td-muntin { stroke: var(--td-trim, #f1efe8); }
+#tdCanvas {
+  display: block; width: 100%; aspect-ratio: 1260 / 938; height: auto;
+  max-height: calc(100svh - 160px); object-fit: cover; object-position: 50% 50%;
+  background: var(--steel);
+}
+@media (max-width: 999px) { #tdCanvas { aspect-ratio: 6 / 5; max-height: calc(100svh - 330px); } }
 .td-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: .68rem; color: var(--grey-200); background: rgba(7,8,10,.7); border: 1px solid var(--line); padding: .4rem .7rem; transition: opacity .4s; }
 .td-hint span { display: inline-block; color: var(--blue-hi); animation: nudge 1.2s ease-in-out infinite; }
 @keyframes nudge { 50% { transform: translateY(3px); } }

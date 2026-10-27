@@ -23,3 +23,13 @@ Photos are resized in the browser (max 1600px) before upload, up to 6 per lead.
 python3 -m http.server 8000
 # open http://localhost:8000
 ```
+
+## Scroll build (tear-off → rebuild)
+The section under the headline runs on a real photo (`images/build/source.jpg`, a free Unsplash photo).
+`tools/build_stages.py` cuts it into stage layers (decking, underlayment, new shingles, sheathing, house wrap, new siding) that keep the photo's own lighting; `js/teardown.js` reveals them as you scroll.
+
+**Use your own job instead:** shoot the house straight-on, save it as `images/build/source.jpg`, retrace the roof and wall regions at the top of `tools/build_stages.py` (pixel coordinates), then run:
+```
+python3 tools/build_stages.py
+```
+New roof and siding colors are `NEW_ROOF` / `NEW_SIDING` in the same file.
