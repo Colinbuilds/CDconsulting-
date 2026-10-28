@@ -339,13 +339,80 @@ export function buildHouse({ mode = "viz" } = {}) {
   });
   root.add(stripMesh);
 
-  // ridge caps
+  // ridge caps (main ridge sits up on a ridge vent)
   const capG = new THREE.Group(); root.add(capG);
+  const capMain = new THREE.Group(); root.add(capMain);
   const capMat = stripMat.clone();
-  const cap = (a, b) => beam(a, b, 1.0, 0.22, capMat, capG);
-  cap(V(-19.1, RIDGE_Y + 0.1, 0), V(19.1, RIDGE_Y + 0.1, 0));
+  const cap = (a, b, g = capG) => beam(a, b, 1.05, 0.22, capMat, g);
+  cap(V(-19.1, RIDGE_Y + 0.34, 0), V(19.1, RIDGE_Y + 0.34, 0), capMain);
   cap(V(-10, BAY_RIDGE + 0.1, 19.1), V(-10, BAY_RIDGE + 0.1, 7.3));
   cap(V(18, GAR_RIDGE + 0.1, -1), V(41.1, GAR_RIDGE + 0.1, -1));
+
+  /* ---------- the roof system a pro installs (also what the scroll build teaches) ---------- */
+  const galv = new THREE.MeshStandardMaterial({ color: "#b7bcc2", metalness: 0.75, roughness: 0.32 });
+  const iceMat = new THREE.MeshStandardMaterial({ color: "#1c1e22", roughness: 0.55 });
+  const starterMat = new THREE.MeshStandardMaterial({ color: "#2a2b2e", roughness: 0.9 });
+  const tapeMat = new THREE.MeshStandardMaterial({ color: "#39414f", roughness: 0.5 });
+  const SYS = { drip: new THREE.Group(), ice: new THREE.Group(), valley: new THREE.Group(), starter: new THREE.Group(),
+    step: new THREE.Group(), pipe: new THREE.Group(), ridgeVent: new THREE.Group(), tape: new THREE.Group(), soffit: new THREE.Group() };
+  Object.values(SYS).forEach((g) => root.add(g));
+
+  // a sub-rectangle of a roof plane: along-eave [x0,x1], up-slope [s0,s1]
+  const band = (pl, s0, s1, inset, mat, g, x0 = 0, x1 = pl.L) => {
+    const at = (x, sv) => pl.p0.clone().addScaledVector(pl.ed, x).addScaledVector(pl.ud, sv).addScaledVector(pl.n, inset);
+    const pts = [at(x0, s0), at(x1, s0), at(x1, s1), at(x0, s1)];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pts.flatMap((v) => [v.x, v.y, v.z]), 3));
+    geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat); m.receiveShadow = true; g.add(m); return m;
+  };
+  const RAKES = { mainFront: ["start", "end"], mainBack: ["start", "end"], bayL: ["end"], bayR: ["start"], garFront: ["end"], garBack: ["start"], porch: ["end"] };
+  for (const pl of planes) {
+    // drip edge: eaves + open rakes, hanging just past the deck edge
+    const out = pl.n.clone().multiplyScalar(-0.06).addScaledVector(pl.ud, -0.08);
+    beam(pl.p0.clone().add(out), pl.p0.clone().addScaledVector(pl.ed, pl.L).add(out), 0.12, 0.3, galv, SYS.drip);
+    for (const side of RAKES[pl.id] || []) {
+      const base = side === "start" ? pl.p0.clone() : pl.p0.clone().addScaledVector(pl.ed, pl.L);
+      const o = pl.ed.clone().multiplyScalar(side === "start" ? -0.08 : 0.08).addScaledVector(pl.n, 0.02);
+      beam(base.clone().add(o), base.clone().addScaledVector(pl.ud, pl.S).add(o), 0.12, 0.28, galv, SYS.drip);
+    }
+    // ice & water shield: first 3.5 ft up from the eave
+    band(pl, 0, Math.min(3.5, pl.S), 0.03, iceMat, SYS.ice);
+    // starter strip at the eave
+    band(pl, 0, 0.75, 0.066, starterMat, SYS.starter);
+  }
+  // valleys where the front gable roof meets the main roof
+  const valleyPts = [[V(-17, MAIN.eave - BAY.pitch, 15.24), V(-10, BAY_RIDGE, 6.5)], [V(-3, MAIN.eave - BAY.pitch, 15.24), V(-10, BAY_RIDGE, 6.5)]];
+  for (const [a, b] of valleyPts) {
+    beam(a.clone().add(V(0, 0.06, 0)), b.clone().add(V(0, 0.06, 0)), 3, 0.02, iceMat, SYS.ice);
+    beam(a.clone().add(V(0, 0.1, 0)), b.clone().add(V(0, 0.1, 0)), 1.5, 0.03, galv, SYS.valley);
+  }
+  // step flashing where the garage roof dies into the main wall, headwall flashing at the porch
+  const gY0 = GAR.eave - 1.2 * GAR.pitch;
+  beam(V(18.06, gY0 + 0.35, GAR.z1 + 1.2), V(18.06, GAR_RIDGE + 0.35, -1), 0.06, 0.65, galv, SYS.step);
+  beam(V(18.06, gY0 + 0.35, GAR.z0 - 1.2), V(18.06, GAR_RIDGE + 0.35, -1), 0.06, 0.65, galv, SYS.step);
+  const stepMat = new THREE.MeshStandardMaterial({ color: "#8d9298" });
+  for (let z = 10.6; z > -0.5; z -= 0.42) box(0.06, 0.08, 0.02, stepMat, 18.07, gY0 + 0.05 + (GAR.z1 + 1.2 - z) * (5.08 / 12.2), z, SYS.step);
+  box(PORCH.x1 - PORCH.x0, 0.55, 0.06, galv, (PORCH.x0 + PORCH.x1) / 2, PORCH.top + 0.25, MAIN.z1 + 0.06, SYS.step);
+  // plumbing vent + pipe boot on the front roof plane
+  {
+    const front = planes.find((p) => p.id === "mainFront");
+    const sv = (15.5 - 7) / 0.832, base = front.p0.clone().addScaledVector(front.ed, 29).addScaledVector(front.ud, sv);
+    const q = new THREE.Quaternion().setFromRotationMatrix(basis(front.ed, front.n));
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.7, 0.04), galv);
+    plate.position.copy(base).addScaledVector(front.n, 0.12); plate.quaternion.copy(q); plate.castShadow = true; SYS.pipe.add(plate);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.42, 0.55, 18), new THREE.MeshStandardMaterial({ color: "#151617", roughness: 0.7 }));
+    collar.position.copy(base).add(V(0, 0.32, 0)); collar.castShadow = true; SYS.pipe.add(collar);
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.5, 18), new THREE.MeshStandardMaterial({ color: "#e9e7e1", roughness: 0.5 }));
+    pipe.position.copy(base).add(V(0, 0.85, 0)); pipe.castShadow = true; SYS.pipe.add(pipe);
+  }
+  // ridge vent
+  box(36, 0.22, 1.25, new THREE.MeshStandardMaterial({ color: "#222326", roughness: 0.8 }), 0, RIDGE_Y + 0.12, 0, SYS.ridgeVent);
+  const ventSlot = new THREE.MeshStandardMaterial({ color: "#0d0d0e" });
+  for (let x = -17.5; x < 18; x += 0.5) box(0.08, 0.12, 1.3, ventSlot, x, RIDGE_Y + 0.1, 0, SYS.ridgeVent);
+  // vented soffit slots
+  const slot = new THREE.MeshStandardMaterial({ color: "#3a3c40", roughness: 0.9 });
+  for (const z of [14.8, -14.8]) for (let x = -18; x < 18.5; x += 2.4) box(1.5, 0.04, 0.35, slot, x, MAIN.eave - 1.5 * PITCH - 0.82, z, SYS.soffit);
 
   /* ---------- porch ---------- */
   const porch = new THREE.Group(); root.add(porch);
@@ -470,6 +537,23 @@ export function buildHouse({ mode = "viz" } = {}) {
     }
   }
 
+  /* ---------- window flashing tape (wrap phase) ---------- */
+  for (const w of W) {
+    const q = new THREE.Quaternion().setFromRotationMatrix(basis(w.u, w.n));
+    const put = (lx, ly, bw, bh) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.01), tapeMat);
+      m.position.copy(w.o).addScaledVector(w.u, lx).addScaledVector(UP, ly).addScaledVector(w.n, 0.055); m.quaternion.copy(q);
+      SYS.tape.add(m);
+    };
+    for (const [x, y, ww, hh] of w.win || []) {
+      const t = 0.75;
+      put(x + ww / 2, y - t / 2, ww + 2 * t, t);         // sill
+      put(x - t / 2, y + hh / 2, t, hh);                  // jambs
+      put(x + ww + t / 2, y + hh / 2, t, hh);
+      put(x + ww / 2, y + hh + t / 2, ww + 2 * t, t);   // head
+    }
+  }
+
   /* ---------- chimney ---------- */
   const chim = new THREE.Group(); root.add(chim);
   box(2.8, 32, 5, M.chimney, -19.6, 16, -0.5, chim);
@@ -518,6 +602,15 @@ export function buildHouse({ mode = "viz" } = {}) {
     if (accents.hex) M.stone.color.set(accents.hex);
     piers.forEach((p) => (p.material = accents.hex ? M.stone : M.trim));
   };
+
+  // finished house shows only what's visible on a real finished roof
+  const showFinished = () => {
+    SYS.ice.visible = SYS.starter.visible = SYS.valley.visible = SYS.tape.visible = false;
+    SYS.drip.visible = SYS.step.visible = SYS.pipe.visible = SYS.ridgeVent.visible = SYS.soffit.visible = true;
+    capMain.visible = true;
+  };
+  if (!build) showFinished();
+  api.anchors = SYS;
 
   api.setDusk = (t) => {
     M.glow.opacity = t * 0.85;
@@ -622,6 +715,17 @@ export function buildHouse({ mode = "viz" } = {}) {
       }
       stripMesh.instanceMatrix.needsUpdate = true;
       capG.visible = on >= 1;
+      const after = (k) => P >= T[k][0];
+      SYS.drip.visible = after("drip");
+      SYS.ice.visible = after("ice");
+      SYS.valley.visible = after("valley");
+      SYS.starter.visible = after("starter");
+      SYS.step.visible = after("step");
+      SYS.pipe.visible = after("pipe");
+      SYS.ridgeVent.visible = after("ridgeVent");
+      capMain.visible = after("ridgeCap");
+      SYS.tape.visible = after("tape");
+      SYS.soffit.visible = P < T.roofOff[0] || after("finish");
 
       // walls: old siding top → bottom
       const so = seg(...T.sidingOff);

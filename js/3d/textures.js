@@ -296,6 +296,24 @@ export function leaves(kind = "tree") {
   });
 }
 
+export function grassTuft() {
+  return memo("grassTuft", () => {
+    const W = 256, H = 128, rnd = seeded(77);
+    const [c, x] = canvas(W, H);
+    const greens = ["#4f6b2e", "#5d7a35", "#6b8a3c", "#46622a", "#7a9445", "#55702f"];
+    for (let i = 0; i < 150; i++) {
+      const bx = 10 + rnd() * (W - 20), h = H * (0.35 + rnd() * 0.6), lean = (rnd() - 0.5) * 50;
+      x.strokeStyle = greens[(rnd() * greens.length) | 0];
+      x.lineWidth = 1.5 + rnd() * 2.2;
+      x.lineCap = "round";
+      x.beginPath(); x.moveTo(bx, H);
+      x.quadraticCurveTo(bx + lean * 0.3, H - h * 0.6, bx + lean, H - h);
+      x.stroke();
+    }
+    return tex(c, { repeat: false });
+  });
+}
+
 /* ---------- details ---------- */
 export function garageDoor() {
   return memo("garage", () => {

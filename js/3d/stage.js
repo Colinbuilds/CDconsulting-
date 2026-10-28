@@ -27,9 +27,9 @@ export function createStage(canvas, { mobile = false } = {}) {
 
   const sun = new THREE.DirectionalLight("#fff4e2", 3.2);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(mobile ? 1536 : 2048, mobile ? 1536 : 2048);
+  sun.shadow.mapSize.set(mobile ? 2048 : 4096, mobile ? 2048 : 4096);
   const sc = sun.shadow.camera;
-  sc.left = -75; sc.right = 75; sc.top = 75; sc.bottom = -75; sc.near = 10; sc.far = 400;
+  sc.left = -62; sc.right = 62; sc.top = 62; sc.bottom = -62; sc.near = 10; sc.far = 400;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.06;
   sun.target.position.set(10, 0, 5);
   scene.add(sun, sun.target);

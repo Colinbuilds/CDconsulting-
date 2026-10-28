@@ -133,6 +133,38 @@ export function buildSite() {
   lawn.receiveShadow = true;
   g.add(lawn);
 
+  // grass tufts: crossed blade cards scattered over the lawn so it reads as turf, not paint
+  {
+    const mobile = matchMedia("(max-width: 999px)").matches;
+    const map = TX.grassTuft();
+    const mat = new THREE.MeshStandardMaterial({ map, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.95, color: "#b9cf8e" });
+    const geo = new THREE.PlaneGeometry(1.6, 0.8); geo.translate(0, 0.4, 0);
+    const n = mobile ? 3500 : 9000;
+    const tufts = new THREE.InstancedMesh(geo, mat, n * 2);
+    tufts.receiveShadow = true;
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
+    const blocked = (x, z) =>
+      (x > 15 && x < 43 && z > 8 && z < 57) ||                // driveway
+      (x > -24 && x < 46 && z > -16 && z < 27) ||             // house, porch, beds
+      (x > 1 && x < 22 && z > 22 && z < 41) ||                // walkway
+      z > 55.5;                                               // sidewalk + street
+    let k = 0;
+    for (let i = 0; i < n * 4 && k < n * 2; i++) {
+      const x = rr(-110, 120), z = rr(-60, 55);
+      if (blocked(x, z)) continue;
+      const s = rr(0.7, 1.3), a = rr(0, Math.PI);
+      for (const turn of [0, Math.PI / 2]) {
+        q.setFromAxisAngle(V(0, 1, 0), a + turn);
+        m.compose(V(x, 0, z), q, V(s, s * rr(0.8, 1.2), s));
+        tufts.setMatrixAt(k, m);
+        tufts.setColorAt(k, c.setRGB(rr(0.82, 1.05), rr(0.88, 1.05), rr(0.75, 1)));
+        k++;
+      }
+    }
+    tufts.count = k;
+    g.add(tufts);
+  }
+
   // driveway + control joints
   const concrete = new THREE.MeshStandardMaterial({ map: TX.photo("concrete", { repeat: 1 / 10 }), color: "#d8d4ca", roughness: 0.9 });
   g.add(flat([[20.2, 10], [37.8, 10], [38.5, 50], [42, 56], [16, 56], [19.5, 50]], 0.05, concrete));

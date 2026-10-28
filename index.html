@@ -99,10 +99,10 @@
 
           <div class="td-hud">
             <ol class="td-phases mono">
-              <li>01 INSPECT</li><li>02 TEAR-OFF</li><li>03 DRY-IN</li><li>04 REBUILD</li><li>05 REVEAL</li>
+              <li>INSPECT</li><li>TEAR-OFF</li><li>DRY-IN</li><li>REBUILD</li><li>FINISH</li>
             </ol>
             <div class="td-progress mono"><span id="tdPhaseLabel">PHASE 01 // INSPECT</span><i><b id="tdBar"></b></i><span id="tdPct">0%</span></div>
-            <p class="td-status" id="tdStatus" aria-live="polite"></p>
+            <article class="td-card" id="tdCard" aria-live="polite"></article>
             <dl class="td-read mono">
               <div><dt>ROOF SQ</dt><dd id="tdRoof">0 / 28</dd></div>
               <div><dt>SIDING</dt><dd id="tdSiding">0%</dd></div>
@@ -114,6 +114,18 @@
             <input type="range" id="tdRange" class="td-range" min="0" max="1000" value="1000" aria-label="Build progress" hidden />
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ MATERIALS GLOSSARY ============ -->
+    <section class="section materials" id="materials" aria-labelledby="mat-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <span class="sec-num mono">[ANATOMY]</span>
+          <h2 id="mat-title">Every layer, <em>explained</em></h2>
+          <p class="sec-sub">The materials in a full roof and siding replacement, in the order a pro installs them. Know what you're paying for, and what to ask your contractor.</p>
+        </header>
+        <div class="mat-grid" id="materialsList"></div>
       </div>
     </section>
 

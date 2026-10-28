@@ -1,11 +1,13 @@
-/* Scroll-driven 3D tear-off & rebuild.
-   Scroll progress P (0 → 1 through the pinned section) drives the build
-   layers in js/3d/house.js and flies the camera around the lot. */
+/* Scroll-driven 3D tear-off & rebuild that teaches as it builds.
+   Scroll progress P (0 → 1 through the pinned section) drives the layers in
+   js/3d/house.js, flies the camera to each component as it goes on, and pins a
+   label + explainer card (js/3d/materials.js) to every material. */
 import * as THREE from "three";
 import { createStage } from "./3d/stage.js";
 import { buildHouse } from "./3d/house.js";
 import { buildSite } from "./3d/site.js";
 import { PRESETS, ORIGINAL, CATALOG, lineOf, hexOf } from "./3d/catalog.js";
+import { MATERIALS, GROUPS } from "./3d/materials.js";
 import { onTextureLoad } from "./3d/textures.js";
 
 const section = document.getElementById("build");
@@ -14,22 +16,31 @@ const $ = (s, el = document) => el.querySelector(s);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const mobile = matchMedia("(max-width: 999px)").matches;
 
+/* build timeline, in real install order */
 const T = {
   scan: [0.015, 0.1],
-  roofOff: [0.12, 0.34],
-  sidingOff: [0.2, 0.4],
-  under: [0.4, 0.52],
-  wrap: [0.44, 0.55],
-  roofOn: [0.55, 0.76],
-  sidingOn: [0.66, 0.84],
-  finish: [0.83, 0.86],
-  dusk: [0.87, 0.98],
+  roofOff: [0.12, 0.28],
+  sidingOff: [0.16, 0.32],
+  drip: [0.36, 0.38],
+  ice: [0.39, 0.41],
+  valley: [0.42, 0.43],
+  under: [0.45, 0.52],
+  wrap: [0.47, 0.54],
+  tape: [0.52, 0.54],
+  starter: [0.56, 0.57],
+  roofOn: [0.58, 0.74],
+  step: [0.64, 0.65],
+  pipe: [0.68, 0.69],
+  sidingOn: [0.7, 0.8],
+  ridgeVent: [0.75, 0.76],
+  ridgeCap: [0.78, 0.79],
+  finish: [0.82, 0.84],
+  dusk: [0.9, 0.99],
 };
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const seg = (P, a, b) => clamp((P - a) / (b - a));
 const smooth = (t) => t * t * (3 - 2 * t);
 
-/* resolve a catalog design into the colors/options the house needs */
 function resolve(d) {
   const r = {};
   for (const cat of Object.keys(CATALOG)) {
@@ -42,26 +53,26 @@ const FINAL = PRESETS.find((p) => p.name === "Navy Luxe").design;
 const AFTER = resolve(FINAL);
 const DURING = resolve({ ...ORIGINAL, roof: FINAL.roof, siding: FINAL.siding });
 
-/* camera keyframes: [P, position, target] */
+/* camera keyframes [P, position, target]: each stop frames the parts being installed */
 const KEYS = [
-  [0.0, [-62, 24, 104], [8, 12, 4]],
-  [0.12, [-44, 52, 74], [2, 18, 2]],
-  [0.36, [-6, 58, 66], [4, 17, 0]],
-  [0.55, [34, 44, 72], [8, 15, 2]],
-  [0.78, [70, 26, 78], [12, 12, 3]],
-  [1.0, [46, 12, 96], [12, 11, 6]],
+  [0.0, [-62, 24, 104], [8, 12, 4]],      // curb view
+  [0.12, [-44, 52, 74], [2, 18, 2]],      // up over the roof for tear-off
+  [0.3, [-8, 56, 62], [4, 18, 2]],        // bare deck
+  [0.42, [-26, 36, 48], [-4, 19, 10]],    // eave, ice & water, valleys
+  [0.53, [18, 26, 52], [10, 15, 12]],     // house wrap + window flashing
+  [0.66, [52, 32, 54], [14, 16, 4]],      // shingles, step flashing, pipe boot
+  [0.8, [-30, 30, 66], [-4, 16, 6]],      // siding + ridge
+  [0.9, [44, 14, 70], [8, 9, 10]],        // gutters, trim, stone
+  [1.0, [42, 11, 94], [12, 11, 6]],       // dusk hero shot
 ];
-// phones are portrait: pull the camera back from its target so the whole house fits
-const KEYS_M = KEYS.map(([p, pos, t]) => [p, pos.map((v, i) => t[i] + (v - t[i]) * (i === 1 ? 1.25 : 1.55)), t]);
+const KEYS_M = KEYS.map(([p, pos, t]) => [p, pos.map((v, i) => t[i] + (v - t[i]) * (i === 1 ? 1.2 : 1.5)), t]);
 const posCurve = new THREE.CatmullRomCurve3((mobile ? KEYS_M : KEYS).map((k) => new THREE.Vector3(...k[1])));
 const tgtCurve = new THREE.CatmullRomCurve3(KEYS.map((k) => new THREE.Vector3(...k[2])));
 function camAt(P) {
-  // map P onto curve parameter by keyframe spacing
-  const ks = KEYS;
   let i = 0;
-  while (i < ks.length - 2 && P > ks[i + 1][0]) i++;
-  const local = smooth(clamp((P - ks[i][0]) / (ks[i + 1][0] - ks[i][0])));
-  const u = (i + local) / (ks.length - 1);
+  while (i < KEYS.length - 2 && P > KEYS[i + 1][0]) i++;
+  const local = smooth(clamp((P - KEYS[i][0]) / (KEYS[i + 1][0] - KEYS[i][0])));
+  const u = (i + local) / (KEYS.length - 1);
   return [posCurve.getPoint(u), tgtCurve.getPoint(u)];
 }
 
@@ -81,16 +92,12 @@ function init() {
 
 function draw() {
   if (!ready) return;
-  // materials for this phase
   const want = P >= T.finish[0] ? "after" : "during";
   if (want !== phaseDesign) { phaseDesign = want; house.setDesign(want === "after" ? AFTER : DURING); }
   house.setBuild(T, P);
-
-  // sun sinks into dusk at the end
   const d = smooth(seg(P, ...T.dusk));
   stage.setSun(34 - d * 31, -62 - d * 14, d > 0.5 ? "dusk" : "day");
   house.setDusk(d);
-
   const [pos, tgt] = camAt(P);
   stage.camera.position.copy(pos);
   stage.camera.lookAt(tgt);
@@ -99,55 +106,57 @@ function draw() {
   hud(P);
 }
 
-/* ---------- inspection overlay (HTML flags pinned to 3D points) ---------- */
-const FLAGS = [
-  [V3(-6, 24.5, 5.5), "GRANULE LOSS"],
-  [V3(10, 20, 11), "LIFTED TABS"],
-  [V3(28, 12, 4), "SOFT DECK"],
-  [V3(-10, 6, 18.2), "DATED SIDING"],
-];
-function V3(x, y, z) { return new THREE.Vector3(x, y, z); }
-const flagEls = FLAGS.map(([, t]) => {
-  const el = document.createElement("span");
-  el.className = "td-flag mono";
-  el.textContent = t;
-  $(".td-svg-wrap").appendChild(el);
-  return el;
+/* ---------- material labels pinned to the 3D house ---------- */
+const wrap = $(".td-svg-wrap");
+const pins = MATERIALS.map((m, i) => {
+  const el = document.createElement("div");
+  el.className = "td-pin" + (i % 2 ? " below" : ""); // alternate above/below so neighbors don't collide
+  el.innerHTML = `<i></i><span><b>${m.name}</b><small class="mono">${String(i + 1).padStart(2, "0")} · ${m.spec}</small></span>`;
+  wrap.appendChild(el);
+  return { m, el, v: new THREE.Vector3(...m.anchor) };
 });
 const scanEl = document.createElement("i");
 scanEl.className = "td-scan";
-$(".td-svg-wrap").appendChild(scanEl);
+wrap.appendChild(scanEl);
+const tmp = new THREE.Vector3();
 
 function overlay(P) {
   const w = canvas.clientWidth, h = canvas.clientHeight;
-  FLAGS.forEach(([p], i) => {
-    const on = P > 0.03 + i * 0.014 && P < 0.13;
-    const el = flagEls[i];
-    el.classList.toggle("is-on", on);
-    if (!on) return;
-    const v = p.clone().project(stage.camera);
-    el.style.left = ((v.x + 1) / 2) * w + "px";
-    el.style.top = ((1 - v.y) / 2) * h + "px";
-  });
+  for (const p of pins) {
+    // phones have room for one label: the material on the card
+    const on = P >= p.m.at[0] && P <= p.m.at[1] && (!mobile || p.m === currentMaterial(P));
+    let show = false;
+    if (on && stage) {
+      tmp.copy(p.v).project(stage.camera);
+      const x = ((tmp.x + 1) / 2) * w, y = ((1 - tmp.y) / 2) * h;
+      show = tmp.z < 1 && x > 8 && x < w - 8 && y > 8 && y < h - 8;
+      if (show) {
+        p.el.style.transform = `translate(${x}px, ${y}px)`;
+        p.el.classList.toggle("flip", x > w * 0.62);
+      }
+    }
+    p.el.classList.toggle("is-on", show);
+  }
   const s = seg(P, ...T.scan);
   scanEl.style.opacity = s > 0 && s < 1 ? 1 : 0;
   scanEl.style.top = s * 100 + "%";
 }
 
-/* ---------- HUD ---------- */
+/* ---------- HUD + teaching card ---------- */
 const PHASES = [
-  { at: 0, id: "INSPECT", msg: "Walking the roof: granule loss, lifted tabs, a soft spot in the deck. It's time." },
-  { at: 0.12, id: "TEAR-OFF", msg: "Stripping it to the deck, ridge down. Old siding comes off with it. Every nail pulled." },
-  { at: 0.4, id: "DRY-IN", msg: "Deck inspected. Synthetic underlayment rolled eave-up, and the walls wrapped and taped." },
-  { at: 0.55, id: "REBUILD", msg: "New architectural shingles from the eave up. New siding bottom-up, every course level." },
-  { at: 0.86, id: "REVEAL", msg: "Same house. New everything: managed start to finish." },
+  { at: 0, id: "INSPECT" }, { at: 0.12, id: "TEAR-OFF" }, { at: 0.35, id: "DRY-IN" }, { at: 0.555, id: "REBUILD" }, { at: 0.815, id: "FINISH" },
 ];
 const h = {
   phases: [...section.querySelectorAll(".td-phases li")],
-  label: $("#tdPhaseLabel"), pct: $("#tdPct"), bar: $("#tdBar"), status: $("#tdStatus"),
+  label: $("#tdPhaseLabel"), pct: $("#tdPct"), bar: $("#tdBar"), card: $("#tdCard"),
   day: $("#tdDay"), roof: $("#tdRoof"), siding: $("#tdSiding"), hint: $("#tdHint"),
 };
-let lastPhase = -1;
+let lastPhase = -1, lastCard = null;
+function currentMaterial(P) {
+  let pick = null;
+  for (const m of MATERIALS) if (P >= m.at[0] - 0.005) pick = m;
+  return pick;
+}
 function hud(P) {
   let ph = 0;
   PHASES.forEach((x, i) => { if (P >= x.at) ph = i; });
@@ -155,17 +164,52 @@ function hud(P) {
     lastPhase = ph;
     h.phases.forEach((li, i) => { li.classList.toggle("is-on", i === ph); li.classList.toggle("is-done", i < ph); });
     h.label.textContent = `PHASE 0${ph + 1} // ${PHASES[ph].id}`;
-    h.status.textContent = PHASES[ph].msg;
+  }
+  const m = currentMaterial(P);
+  if (m !== lastCard) {
+    lastCard = m;
+    if (!m) {
+      h.card.innerHTML = `<p class="td-card-k mono">HOW A ROOF & SIDING JOB REALLY GOES</p><h3>Scroll to start the job.</h3><p>Every material gets labeled as it goes on, in the order a pro installs it.</p>`;
+    } else {
+      const n = MATERIALS.indexOf(m) + 1;
+      h.card.innerHTML = `
+        <p class="td-card-k mono">LAYER ${String(n).padStart(2, "0")} / ${MATERIALS.length} · ${GROUPS[m.group].toUpperCase()}</p>
+        <h3>${m.name}</h3>
+        <p class="td-card-spec mono">${m.spec}</p>
+        <p class="td-card-what">${m.what}</p>
+        <p class="td-card-why"><b>Why it matters:</b> ${m.why}</p>
+        <p class="td-card-tip mono"><b>PRO TIP</b> ${m.tip}</p>`;
+      h.card.classList.remove("pop"); void h.card.offsetWidth; h.card.classList.add("pop");
+    }
   }
   h.pct.textContent = Math.round(P * 100) + "%";
   h.bar.style.width = P * 100 + "%";
-  h.day.textContent = P < 0.12 ? "00" : P < 0.4 ? "01" : P < 0.66 ? "02" : "03";
+  h.day.textContent = P < 0.12 ? "00" : P < 0.35 ? "01" : P < 0.66 ? "02" : "03";
   const off = seg(P, ...T.roofOff), on = seg(P, ...T.roofOn);
   h.roof.textContent = P < 0.45 ? `${Math.round(off * 34)} / 34 OFF` : `${Math.round(on * 34)} / 34 ON`;
   const so = seg(P, ...T.sidingOff), sn = seg(P, ...T.sidingOn);
   h.siding.textContent = P < 0.5 ? `${Math.round(so * 100)}% OFF` : `${Math.round(sn * 100)}% ON`;
   section.classList.toggle("is-done", P > 0.95);
   h.hint.classList.toggle("is-gone", P > 0.03);
+}
+
+/* ---------- glossary under the build ---------- */
+const list = document.getElementById("materialsList");
+if (list) {
+  list.innerHTML = Object.entries(GROUPS).map(([g, label]) => `
+    <div class="mat-group">
+      <h3 class="mono">${label.toUpperCase()}</h3>
+      <ol>${MATERIALS.map((m, i) => m.group !== g ? "" : `
+        <li>
+          <span class="mat-n mono">${String(i + 1).padStart(2, "0")}</span>
+          <div>
+            <h4>${m.name}</h4>
+            <p class="mat-spec mono">${m.spec}</p>
+            <p>${m.what} ${m.why}</p>
+            <p class="mat-tip mono"><b>PRO TIP</b> ${m.tip}</p>
+          </div>
+        </li>`).join("")}</ol>
+    </div>`).join("");
 }
 
 /* ---------- drive ---------- */
