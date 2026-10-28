@@ -110,6 +110,7 @@
       ? lines.map((x) => `<li><span>${x.name} · ${x.label}</span><span>${money(x.l)}–${money(x.u)}</span></li>`).join("")
       : `<li class="empty">Select at least one job →</li>`;
 
+    window.CD.estimate = lines.length ? { lo, hi } : null;
     lastSummary = lines.length
       ? `${money(lo)} – ${money(hi)} | ` + lines.map((x) => `${x.name}: ${x.label}, ${x.q} ${x.unit}`).join("; ") +
         ` | ${h.footprint} sq ft footprint, ${h.stories} story, ${$("#pitch").selectedOptions[0].text} pitch`
