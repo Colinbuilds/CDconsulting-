@@ -47,4 +47,6 @@ Both the scroll-through tear-off and the visualizer use one real-time 3D model (
 
 Shingles, siding profiles, decking, underlayment and house wrap are generated in code (`js/3d/textures.js`) so any product color can tint them. Lawn, concrete, pavers, stone, bark and mulch are CC0 photo textures from [Poly Haven](https://polyhaven.com) in `images/tex/`.
 
+**HD visualizer:** the visualizer runs in HD mode (`createStage(canvas, { hd: true })`): it lights the house with a real HDR sky (`images/tex/sky.hdr`, Poly Haven "Kloofendal 48d Partly Cloudy", CC0) with a 4K backdrop (`sky.webp`), the sun placed where it sits in the photo, ground-contact ambient occlusion, multisampled anti-aliasing and up to 2× pixel density. "Download 4K image" renders a 3840px still.
+
 Colors are on-screen approximations of each manufacturer's published colors; keep the "confirm with physical samples" note.
