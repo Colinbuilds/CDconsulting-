@@ -11,6 +11,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    // Intro gate: the 3D build plays first and the rest of the site unlocks when it's scrolled through.
+    // Skipped for reduced motion, for links straight to a section or design, and after it's been seen this visit.
+    (function () {
+      var h = location.hash.replace("#", "");
+      var seen = false;
+      try { seen = sessionStorage.getItem("cd-intro-done") === "1"; } catch (e) {}
+      var deepLink = h && h !== "build" && h !== "top";
+      if (!seen && !deepLink && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("intro-locked");
+    })();
+  </script>
   <script type="importmap">
     { "imports": { "three": "./js/vendor/three/three.module.min.js", "three/addons/": "./js/vendor/three/addons/" } }
   </script>
@@ -38,11 +49,50 @@
       <a href="#contact" class="btn btn-sm btn-blue">Start a Project</a>
     </nav>
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    <button class="btn btn-ghost btn-sm intro-skip" id="introSkip" type="button">Skip intro →</button>
   </header>
 
   <main>
+    <!-- ============ SCROLL BUILD: TEAR-OFF → REBUILD ============ -->
+    <section class="teardown" id="build" aria-label="Scroll-through roof and siding replacement">
+      <div class="td-sticky">
+        <div class="wrap td-grid">
+          <header class="td-head">
+            <p class="kicker mono"><span class="dot"></span> LIVE BUILD // SCROLL TO RUN</p>
+            <h2>Tear it off.<br/><em>Build it right.</em></h2>
+          </header>
+
+          <div class="td-stage panel">
+            <div class="panel-head mono"><span>JOB // CD-2026-014</span><span>DAY <b id="tdDay">00</b></span></div>
+            <div class="td-svg-wrap">
+              <canvas id="tdCanvas" role="img" aria-label="A 3D house has its old roof and siding torn off and replaced as you scroll"></canvas>
+              <div class="td-loading mono">LOADING 3D MODEL…</div>
+              <div class="td-hint mono" id="tdHint">SCROLL <span>▼</span></div>
+            </div>
+          </div>
+
+          <div class="td-hud">
+            <ol class="td-phases mono">
+              <li>INSPECT</li><li>TEAR-OFF</li><li>DRY-IN</li><li>REBUILD</li><li>FINISH</li>
+            </ol>
+            <div class="td-progress mono"><span id="tdPhaseLabel">PHASE 01 // INSPECT</span><i><b id="tdBar"></b></i><span id="tdPct">0%</span></div>
+            <article class="td-card" id="tdCard" aria-live="polite"></article>
+            <dl class="td-read mono">
+              <div><dt>ROOF SQ</dt><dd id="tdRoof">0 / 28</dd></div>
+              <div><dt>SIDING</dt><dd id="tdSiding">0%</dd></div>
+            </dl>
+            <div class="td-cta" id="tdCta">
+              <a href="#home" class="btn btn-blue btn-sm">Enter the site ↓</a>
+              <a href="#visualizer" class="btn btn-ghost btn-sm">Design my house</a>
+            </div>
+            <input type="range" id="tdRange" class="td-range" min="0" max="1000" value="1000" aria-label="Build progress" hidden />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ HERO ============ -->
-    <section class="hero">
+    <section class="hero" id="home">
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="wrap hero-inner">
         <div class="hero-copy">
@@ -76,44 +126,6 @@
         <div class="ticker-track mono">
           <span>ROOFING</span><i>✦</i><span>SIDING</span><i>✦</i><span>WINDOWS</span><i>✦</i><span>ADDITIONS</span><i>✦</i><span>AI RENDERING</span><i>✦</i><span>PROJECT MANAGEMENT</span><i>✦</i><span>INSURANCE CLAIMS</span><i>✦</i>
           <span>ROOFING</span><i>✦</i><span>SIDING</span><i>✦</i><span>WINDOWS</span><i>✦</i><span>ADDITIONS</span><i>✦</i><span>AI RENDERING</span><i>✦</i><span>PROJECT MANAGEMENT</span><i>✦</i><span>INSURANCE CLAIMS</span><i>✦</i>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ SCROLL BUILD: TEAR-OFF → REBUILD ============ -->
-    <section class="teardown" id="build" aria-label="Scroll-through roof and siding replacement">
-      <div class="td-sticky">
-        <div class="wrap td-grid">
-          <header class="td-head">
-            <p class="kicker mono"><span class="dot"></span> LIVE BUILD // SCROLL TO RUN</p>
-            <h2>Tear it off.<br/><em>Build it right.</em></h2>
-          </header>
-
-          <div class="td-stage panel">
-            <div class="panel-head mono"><span>JOB // CD-2026-014</span><span>DAY <b id="tdDay">00</b></span></div>
-            <div class="td-svg-wrap">
-              <canvas id="tdCanvas" role="img" aria-label="A 3D house has its old roof and siding torn off and replaced as you scroll"></canvas>
-              <div class="td-loading mono">LOADING 3D MODEL…</div>
-              <div class="td-hint mono" id="tdHint">SCROLL <span>▼</span></div>
-            </div>
-          </div>
-
-          <div class="td-hud">
-            <ol class="td-phases mono">
-              <li>INSPECT</li><li>TEAR-OFF</li><li>DRY-IN</li><li>REBUILD</li><li>FINISH</li>
-            </ol>
-            <div class="td-progress mono"><span id="tdPhaseLabel">PHASE 01 // INSPECT</span><i><b id="tdBar"></b></i><span id="tdPct">0%</span></div>
-            <article class="td-card" id="tdCard" aria-live="polite"></article>
-            <dl class="td-read mono">
-              <div><dt>ROOF SQ</dt><dd id="tdRoof">0 / 28</dd></div>
-              <div><dt>SIDING</dt><dd id="tdSiding">0%</dd></div>
-            </dl>
-            <div class="td-cta" id="tdCta">
-              <a href="#visualizer" class="btn btn-blue btn-sm">Render my house →</a>
-              <a href="#estimate" class="btn btn-ghost btn-sm">Get my ballpark</a>
-            </div>
-            <input type="range" id="tdRange" class="td-range" min="0" max="1000" value="1000" aria-label="Build progress" hidden />
-          </div>
         </div>
       </div>
     </section>

@@ -151,7 +151,7 @@ const h = {
   label: $("#tdPhaseLabel"), pct: $("#tdPct"), bar: $("#tdBar"), card: $("#tdCard"),
   day: $("#tdDay"), roof: $("#tdRoof"), siding: $("#tdSiding"), hint: $("#tdHint"),
 };
-let lastPhase = -1, lastCard = null;
+let lastPhase = -1, lastCard; // undefined so the opening "scroll to start" card renders on the first pass
 function currentMaterial(P) {
   let pick = null;
   for (const m of MATERIALS) if (P >= m.at[0] - 0.005) pick = m;
@@ -190,8 +190,30 @@ function hud(P) {
   const so = seg(P, ...T.sidingOff), sn = seg(P, ...T.sidingOn);
   h.siding.textContent = P < 0.5 ? `${Math.round(so * 100)}% OFF` : `${Math.round(sn * 100)}% ON`;
   section.classList.toggle("is-done", P > 0.95);
+  if (P > 0.97) unlock();
   h.hint.classList.toggle("is-gone", P > 0.03);
 }
+
+/* ---------- intro gate: unlock the rest of the site once the build is done ---------- */
+const root = document.documentElement;
+function unlock(scrollTo) {
+  if (!root.classList.contains("intro-locked")) return;
+  root.classList.remove("intro-locked");
+  root.classList.add("site-unlocking");
+  try { sessionStorage.setItem("cd-intro-done", "1"); } catch (e) {}
+  setTimeout(() => root.classList.remove("site-unlocking"), 1200);
+  // the page just grew by the whole site; jump once layout has settled
+  if (scrollTo) requestAnimationFrame(() => requestAnimationFrame(() => {
+    const el = document.getElementById(scrollTo);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 64, behavior: "instant" });
+  }));
+}
+document.getElementById("introSkip")?.addEventListener("click", () => unlock("home"));
+section.querySelectorAll(".td-cta a").forEach((a) => a.addEventListener("click", (e) => {
+  if (!root.classList.contains("intro-locked")) return;
+  e.preventDefault();
+  unlock(a.getAttribute("href").slice(1));
+}));
 
 /* ---------- glossary under the build ---------- */
 const list = document.getElementById("materialsList");

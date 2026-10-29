@@ -749,3 +749,10 @@ form.lead-form > .btn, form.lead-form > .form-msg { margin: 1.2rem .9rem 0; widt
 @media (min-width: 860px) { .ins-cta { grid-template-columns: 1fr auto; } }
 .ins-cta h3 { margin: 0 0 .4rem; font-family: var(--f-display); font-weight: 400; text-transform: uppercase; font-size: clamp(1.6rem, 3vw, 2.2rem); }
 .ins-cta p { margin: 0; color: var(--grey-200); max-width: 60ch; }
+
+/* ---------- intro gate: only the 3D build exists until it's scrolled through ---------- */
+.intro-skip { display: none; }
+.intro-locked .intro-skip { display: inline-flex; }
+.intro-locked main > :not(#build), .intro-locked footer, .intro-locked .nav-links, .intro-locked .nav-toggle { display: none !important; }
+.site-unlocking main > :not(#build), .site-unlocking footer { animation: siteIn .9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes siteIn { from { opacity: 0; transform: translateY(24px); } }
