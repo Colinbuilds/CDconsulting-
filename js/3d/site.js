@@ -1,6 +1,7 @@
 /* Lot + landscape: lawn, driveway, walkway, street, beds, shrubs, trees. */
 import * as THREE from "three";
 import * as TX from "./textures.js";
+import { NO_AO } from "./stage.js";
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 let seed = 99;
@@ -45,6 +46,7 @@ class Foliage {
   constructor(kind, max) {
     const map = TX.leaves(kind);
     this.mat = new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.88 });
+    this.mat.alphaToCoverage = true; // soft leaf edges under multisampling (HD)
     this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), this.mat, max);
     this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.5 });
@@ -126,44 +128,12 @@ export function buildSite() {
     // mowing stripes on the front lawn
     const stripe = z > 22 && z < 56 ? (Math.floor((x + 200) / 9) % 2 ? 0.06 : -0.04) : 0;
     const k = 0.7 + n * 0.22 + stripe;
-    cols.push(0.6 * k, 0.78 * k, 0.44 * k);
+    cols.push(0.46 * k, 0.74 * k, 0.33 * k);
   }
   lawnGeo.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
   const lawn = new THREE.Mesh(lawnGeo, new THREE.MeshStandardMaterial({ map: lawnMap, vertexColors: true, roughness: 0.97 }));
   lawn.receiveShadow = true;
   g.add(lawn);
-
-  // grass tufts: crossed blade cards scattered over the lawn so it reads as turf, not paint
-  {
-    const mobile = matchMedia("(max-width: 999px)").matches;
-    const map = TX.grassTuft();
-    const mat = new THREE.MeshStandardMaterial({ map, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.95, color: "#b9cf8e" });
-    const geo = new THREE.PlaneGeometry(1.6, 0.8); geo.translate(0, 0.4, 0);
-    const n = mobile ? 3500 : 9000;
-    const tufts = new THREE.InstancedMesh(geo, mat, n * 2);
-    tufts.receiveShadow = true;
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), c = new THREE.Color();
-    const blocked = (x, z) =>
-      (x > 15 && x < 43 && z > 8 && z < 57) ||                // driveway
-      (x > -24 && x < 46 && z > -16 && z < 27) ||             // house, porch, beds
-      (x > 1 && x < 22 && z > 22 && z < 41) ||                // walkway
-      z > 55.5;                                               // sidewalk + street
-    let k = 0;
-    for (let i = 0; i < n * 4 && k < n * 2; i++) {
-      const x = rr(-110, 120), z = rr(-60, 55);
-      if (blocked(x, z)) continue;
-      const s = rr(0.7, 1.3), a = rr(0, Math.PI);
-      for (const turn of [0, Math.PI / 2]) {
-        q.setFromAxisAngle(V(0, 1, 0), a + turn);
-        m.compose(V(x, 0, z), q, V(s, s * rr(0.8, 1.2), s));
-        tufts.setMatrixAt(k, m);
-        tufts.setColorAt(k, c.setRGB(rr(0.82, 1.05), rr(0.88, 1.05), rr(0.75, 1)));
-        k++;
-      }
-    }
-    tufts.count = k;
-    g.add(tufts);
-  }
 
   // driveway + control joints
   const concrete = new THREE.MeshStandardMaterial({ map: TX.photo("concrete", { repeat: 1 / 10 }), color: "#d8d4ca", roughness: 0.9 });
@@ -200,6 +170,7 @@ export function buildSite() {
     [7.6, 23.2, 1.2], [10.6, 23.6, 1.5], [13.8, 23.4, 1.4], [16.8, 19.5, 1.5], [16.8, 16, 1.3],
     [-24, 4, 2], [-24, 10, 2.2], [43, 4, 2], [43, -6, 2.2]]) shrub(shrubs, x, z, r);
   shrubs.done();
+  shrubs.mesh.layers.set(NO_AO);
   g.add(shrubs.mesh);
 
   const bark = new THREE.MeshStandardMaterial({ map: TX.photo("bark", { repeat: 1, repeatY: 3 }), normalMap: TX.photo("bark-nor", { srgb: false, repeat: 1, repeatY: 3 }), roughness: 0.95 });
@@ -218,6 +189,7 @@ export function buildSite() {
     T(Math.cos(a) * d * 1.3, Math.sin(a) * d * 0.9 - 20, rr(45, 70), rr(30, 44), { clusters: 26, cards: 12, limbs: 3 });
   }
   leaves.done();
+  leaves.mesh.layers.set(NO_AO);
   g.add(leaves.mesh);
 
   return g;

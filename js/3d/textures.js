@@ -43,6 +43,12 @@ const listeners = new Set();
 let pending = 0;
 /* subscribe to "a texture finished loading" so each 3D view can re-render */
 export const onTextureLoad = (fn) => { listeners.add(fn); if (pending === 0) fn(0); };
+/* count any other async asset (the HDR sky) toward "everything loaded" */
+export function trackLoad() {
+  pending++;
+  let once = false;
+  return () => { if (once) return; once = true; pending--; listeners.forEach((f) => f(pending)); };
+}
 export function photo(name, { srgb = true, repeat = 1, repeatY } = {}) {
   return memo(`photo:${name}:${srgb}:${repeat}:${repeatY}`, () => {
     pending++;
@@ -69,12 +75,12 @@ export function shingleStrip() {
     let px = 0;
     while (px < W) {
       const tw = 22 + rnd() * 46;
-      const v = 175 + rnd() * 70;
+      const v = 200 + rnd() * 45;
       x.fillStyle = `rgb(${v},${v},${v})`;
       x.fillRect(px, H * 0.42, tw, H * 0.58);
-      // laminate dragon-tooth shadow
+      // laminate dragon-tooth shadow (subtle in color; the bump map carries the depth)
       if (rnd() < 0.7) {
-        const sv = v * (0.55 + rnd() * 0.15);
+        const sv = v * (0.8 + rnd() * 0.08);
         x.fillStyle = `rgb(${sv},${sv},${sv})`;
         const top = H * (0.62 + rnd() * 0.15);
         x.fillRect(px + tw * rnd() * 0.3, top, tw * (0.5 + rnd() * 0.5), H - top);
@@ -293,24 +299,6 @@ export function leaves(kind = "tree") {
     }
     const t = tex(c, { repeat: false });
     return t;
-  });
-}
-
-export function grassTuft() {
-  return memo("grassTuft", () => {
-    const W = 256, H = 128, rnd = seeded(77);
-    const [c, x] = canvas(W, H);
-    const greens = ["#4f6b2e", "#5d7a35", "#6b8a3c", "#46622a", "#7a9445", "#55702f"];
-    for (let i = 0; i < 150; i++) {
-      const bx = 10 + rnd() * (W - 20), h = H * (0.35 + rnd() * 0.6), lean = (rnd() - 0.5) * 50;
-      x.strokeStyle = greens[(rnd() * greens.length) | 0];
-      x.lineWidth = 1.5 + rnd() * 2.2;
-      x.lineCap = "round";
-      x.beginPath(); x.moveTo(bx, H);
-      x.quadraticCurveTo(bx + lean * 0.3, H - h * 0.6, bx + lean, H - h);
-      x.stroke();
-    }
-    return tex(c, { repeat: false });
   });
 }
 

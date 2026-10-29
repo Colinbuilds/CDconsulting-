@@ -144,10 +144,11 @@ const View = (() => {
 
   function init() {
     const mobile = matchMedia("(max-width: 999px)").matches;
-    stage = createStage(canvas, { mobile });
+    stage = createStage(canvas, { mobile, hd: true });
     house = buildHouse({ mode: "viz" });
     stage.scene.add(house.root, buildSite());
     stage.setSun(34, -62, "day");
+    stage.usePhotoSky().then(() => { if (!dusk) request(); }).catch((e) => console.warn("HDR sky unavailable", e));
     controls = new OrbitControls(stage.camera, canvas);
     controls.enablePan = false;
     controls.minDistance = 45; controls.maxDistance = 230;
@@ -197,15 +198,18 @@ const View = (() => {
   function apply() {
     if (!ready) return;
     house.setDesign(resolve(comparing ? ORIGINAL : design));
-    stage.setSun(dusk ? 4 : 34, dusk ? -76 : -62, dusk ? "dusk" : "day");
+    if (dusk) stage.setSun(4, -76, "dusk");
+    else stage.usePhotoSky().then(request).catch(() => stage.setSun(34, -62, "day"));
     house.setDusk(dusk ? 1 : 0);
     request();
   }
 
-  async function snapshot(type = "image/jpeg") {
+  // full 4K render for downloads; a lighter 1600px one to attach to a lead
+  async function snapshot(width = 3840) {
     if (!ready) return null;
-    stage.render();
-    return new Promise((res) => canvas.toBlob(res, type, 0.9));
+    const blob = await stage.snapshot(width);
+    request();
+    return blob;
   }
 
   $$("[data-view]").forEach((b) => b.addEventListener("click", () => {
@@ -380,7 +384,7 @@ $("#vzDownload").addEventListener("click", async () => {
   const blob = mode === "photo" && Photo.hasImage() ? await Photo.snapshot() : await View.snapshot();
   if (!blob) return toast("Still loading, try again in a second");
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = "cd-consulting-design.jpg"; a.click();
+  a.href = URL.createObjectURL(blob); a.download = mode === "photo" ? "cd-consulting-design.jpg" : "cd-consulting-design-4k.jpg"; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
 $("#vzEstimate").addEventListener("click", () => {
@@ -389,7 +393,7 @@ $("#vzEstimate").addEventListener("click", () => {
 });
 $("#sendBuild").addEventListener("click", async () => {
   window.CD.attach("build", `Build: ${presetName || "Custom"} | ` + describe(design).join(" | "));
-  const blob = mode === "photo" && Photo.hasImage() ? await Photo.snapshot() : await View.snapshot();
+  const blob = mode === "photo" && Photo.hasImage() ? await Photo.snapshot() : await View.snapshot(1600);
   if (blob) window.CD.attach("render", blob);
   window.CD.goTo("contact");
 });

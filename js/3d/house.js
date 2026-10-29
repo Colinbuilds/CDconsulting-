@@ -314,7 +314,7 @@ export function buildHouse({ mode = "viz" } = {}) {
         const x0 = Math.max(0, x), x1 = Math.min(pl.L, x + 3), wdt = x1 - x0;
         if (wdt < 0.25) continue;
         const h = Math.min(1, pl.S - s);
-        const center = pl.p0.clone().addScaledVector(pl.ed, x0 + wdt / 2).addScaledVector(pl.ud, s + h / 2).addScaledVector(pl.n, 0.075);
+        const center = pl.p0.clone().addScaledVector(pl.ed, x0 + wdt / 2).addScaledVector(pl.ud, s + h / 2).addScaledVector(pl.n, 0.1);
         if (pl.hidden && pl.hidden(center)) continue;
         strips.push({ pi, c, courses, x: x0 / pl.L, center, wdt, h, flip: Math.random() < 0.5 });
       }
@@ -329,14 +329,15 @@ export function buildHouse({ mode = "viz" } = {}) {
   strips.forEach((st, i) => {
     const pl = planes[st.pi];
     const q = new THREE.Quaternion().setFromRotationMatrix(basis(pl.ed, pl.n));
-    tilt.setFromAxisAngle(V(1, 0, 0), -0.035);
+    tilt.setFromAxisAngle(V(1, 0, 0), -0.09); // butt edge lifts ~1/2", enough separation between courses for the depth buffer
     q.multiply(tilt);
-    const m = new THREE.Matrix4().compose(st.center, q, V((st.wdt / 3) * (st.flip ? -1 : 1), st.h, 1));
+    const m = new THREE.Matrix4().compose(st.center, q, V(st.wdt / 3, st.h, 1)); // never mirror with a negative scale: it turns the strip inside out (renders black)
     finals.push(m);
     stripMesh.setMatrixAt(i, m);
     const v = 0.9 + Math.random() * 0.2;
     stripMesh.setColorAt(i, col.setRGB(v, v, v));
   });
+  stripMesh.layers.set(1); // overlapping strips read as crevices to ambient occlusion; keep them out of that pass
   root.add(stripMesh);
 
   // ridge caps (main ridge sits up on a ridge vent)
