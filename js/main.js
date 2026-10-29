@@ -4,18 +4,59 @@
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const SITE = window.SITE || {};
 
-  // Shared bus so the visualizer / estimator can hand things to the lead form.
+  // ---- footer (layout.js holds the markup shared by every page) ----
+  const footer = $("footer.footer");
+  if (footer && window.CDLayout) window.CDLayout.footer(footer);
+
+  // Shared bus so the visualizer / estimator / insurance pages can hand things to the lead form.
+  // Everything attached is kept in sessionStorage, so it survives moving between pages.
+  const store = {
+    get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  const toBlob = (url) => {
+    const [head, b64] = url.split(","), bin = atob(b64), buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return new Blob([buf], { type: head.slice(5, head.indexOf(";")) });
+  };
+  const saved = store.get("cd-attach") || {};
+  let renderURL = saved.render || null;
+  const persist = () => store.set("cd-attach", { ...window.CD.attachments, render: renderURL });
+  const PAGES = { contact: "index.html#contact", about: "index.html#about", estimate: "estimate.html", visualizer: "design.html", insurance: "insurance.html", work: "work.html" };
+
   window.CD = {
-    attachments: { build: null, estimate: null, render: null },
+    attachments: { build: null, estimate: null, render: null, claim: null, interests: [], ...saved, render: saved.render ? toBlob(saved.render) : null },
     listeners: [],
     attach(key, value) {
       this.attachments[key] = value;
       this.listeners.forEach((fn) => fn(this.attachments));
+      if (key === "render") {
+        renderURL = null;
+        if (value) { const r = new FileReader(); r.onload = () => { renderURL = r.result; persist(); }; r.readAsDataURL(value); }
+      }
+      persist();
     },
-    onAttach(fn) { this.listeners.push(fn); },
-    goTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); },
+    onAttach(fn) { this.listeners.push(fn); fn(this.attachments); },
+    // scroll there if it's on this page, otherwise open the page that has it
+    goTo(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else location.href = PAGES[id] || "index.html#" + id;
+    },
+    // fire an event for a tool that may live on another page (e.g. visualizer → estimator)
+    handoff(type, detail, id) {
+      if (document.getElementById(id)) { document.dispatchEvent(new CustomEvent(type, { detail })); this.goTo(id); }
+      else { store.set("cd-handoff", { type, detail }); this.goTo(id); }
+    },
+    get estimate() { return store.get("cd-estimate"); },
+    set estimate(v) { store.set("cd-estimate", v); },
     money(n) { return "$" + Math.round(n).toLocaleString("en-US"); },
   };
+  // deliver a handoff once this page's scripts have registered their listeners
+  addEventListener("DOMContentLoaded", () => {
+    const h = store.get("cd-handoff");
+    if (h) { store.set("cd-handoff", null); document.dispatchEvent(new CustomEvent(h.type, { detail: h.detail })); }
+  });
 
   // ---- fill config values ----
   $$("[data-site]").forEach((el) => {
@@ -27,7 +68,8 @@
     const v = SITE[el.dataset.site] || "";
     el.href = kind === "tel" ? "tel:" + v.replace(/[^\d+]/g, "") : "mailto:" + v;
   });
-  $("#year").textContent = new Date().getFullYear();
+  const year = $("#year");
+  if (year) year.textContent = new Date().getFullYear();
 
   // ---- mobile nav ----
   const nav = $(".nav");
@@ -36,6 +78,15 @@
     const open = nav.classList.toggle("open");
     toggle.setAttribute("aria-expanded", open);
   });
+  // "How it's built" menu: hover on desktop, tap anywhere
+  const drop = $(".nav-drop"), dropBtn = $(".nav-drop-btn");
+  dropBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = drop.classList.toggle("open");
+    dropBtn.setAttribute("aria-expanded", open);
+  });
+  document.addEventListener("click", (e) => { if (!drop.contains(e.target)) { drop.classList.remove("open"); dropBtn.setAttribute("aria-expanded", "false"); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { drop.classList.remove("open"); dropBtn.setAttribute("aria-expanded", "false"); } });
   $$(".nav-links a").forEach((a) => a.addEventListener("click", () => {
     nav.classList.remove("open");
     toggle.setAttribute("aria-expanded", "false");
@@ -90,6 +141,7 @@
   // ---- portfolio ----
   const projects = window.PROJECTS || [];
   const grid = $("#workGrid");
+  if (!grid) return;
   const CAT = { roofing: "Roofing", siding: "Siding", windows: "Windows", additions: "Addition", exterior: "Full exterior" };
   const phSVG = (cat) => {
     const art = {
@@ -152,7 +204,7 @@
         <p>${p.description}</p>
         <ul class="scope">${(p.scope || []).map((s) => `<li>${s}</li>`).join("")}</ul>
       </div>
-      <a href="#contact" class="btn btn-blue" data-close>Want this on your house?</a>`;
+      <a href="index.html#contact" class="btn btn-blue" data-close>Want this on your house?</a>`;
     const range = $(".ba input", modal);
     if (range) range.addEventListener("input", () => $(".ba", modal).style.setProperty("--pos", range.value + "%"));
     modal.showModal();

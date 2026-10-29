@@ -74,10 +74,17 @@
   window.CD.onAttach((a) => {
     $("#buildField").value = a.build || "";
     $("#estimateField").value = a.estimate || "";
+    $("#claimCheckField").value = a.claim || "";
+    (a.interests || []).forEach(check);
+    if (a.claim || (a.interests || []).includes("Storm / Insurance")) {
+      const msgBox = form.elements.message;
+      if (msgBox && !msgBox.value) msgBox.placeholder = "e.g. Hail last Tuesday. Dents in the gutters, a few shingles missing on the back side. Haven't filed yet.";
+    }
     const items = [];
     if (a.build) items.push(`<li><b>Design build</b> — ${a.build.split(" | ")[0].replace("Build: ", "")}</li>`);
     if (a.render) items.push(`<li><b>Your rendered photo</b></li>`);
     if (a.estimate) items.push(`<li><b>Ballpark</b> — ${a.estimate.split(" | ")[0]}</li>`);
+    if (a.claim) items.push(`<li><b>Should-I-file check</b> — ${a.claim.split(" | ")[0]}</li>`);
     $("#attachedList").innerHTML = items.join("");
     $("#attached").hidden = !items.length;
     if (a.build) check("AI Render");
@@ -91,7 +98,19 @@
     }
     drawThumbs();
   });
-  const check = (v) => { const el = form.querySelector(`input[name=interest][value="${v}"]`); if (el) el.checked = true; };
+  function check(v) {
+    const el = form.querySelector(`input[name=interest][value="${v}"]`);
+    if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event("change", { bubbles: true })); }
+  }
+
+  // claim details appear only when Storm / Insurance is checked
+  const claimFields = $("#claimFields");
+  const storm = form.querySelector('input[name=interest][value="Storm / Insurance"]');
+  if (claimFields && storm) {
+    const sync = () => { claimFields.hidden = !storm.checked; };
+    storm.addEventListener("change", sync);
+    sync();
+  }
 
   // ---------- submit ----------
   function say(text, kind = "") { msg.textContent = text; msg.className = "form-msg mono " + kind; }

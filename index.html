@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CD Consulting — Construction Consultant</title>
-  <meta name="description" content="Construction consultant for roofing, siding, windows and additions. Design your exterior in 3D, get a ballpark estimate, learn how insurance claims work, and start your project." />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CD Consulting | Construction Consultant</title>
+  <meta name="description" content="Construction consultant for roofing, siding, windows and gutters. Watch each job built in 3D, design your exterior, get a ballpark estimate and start your project." />
   <meta name="theme-color" content="#0b0c0f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
   <script>
-    // Intro gate: the 3D build plays first and the rest of the site unlocks when it's scrolled through.
-    // Skipped for reduced motion, for links straight to a section or design, and after it's been seen this visit.
+    // Intro gate: the full-job walkthrough plays first; the rest of the page unlocks once it's scrolled through.
+    // Skipped for reduced motion, for links straight to a section, and after it's been seen this visit.
     (function () {
       var h = location.hash.replace("#", "");
       var seen = false;
@@ -26,79 +26,25 @@
     { "imports": { "three": "./js/vendor/three/three.module.min.js", "three/addons/": "./js/vendor/three/addons/" } }
   </script>
 </head>
-<body>
-
-  <!-- ============ NAV ============ -->
-  <header class="nav" id="top">
-    <a href="#home" class="logo" aria-label="CD Consulting home">
-      <svg viewBox="0 0 40 40" class="logo-mark" aria-hidden="true">
-        <rect x="1" y="1" width="38" height="38" rx="9" fill="none" stroke="currentColor" stroke-opacity=".35"/>
-        <path d="M9 19 20 10l11 9" fill="none" stroke="var(--blue)" stroke-width="2"/>
-        <path d="M13 17v12h14V17" fill="none" stroke="currentColor" stroke-width="1.4"/>
-      </svg>
-      <span class="logo-text">CD <i>Consulting</i></span>
-    </a>
-    <nav class="nav-links" aria-label="Main">
-      <a href="#visualizer">Design</a>
-      <a href="#estimate">Estimate</a>
-      <a href="#insurance">Insurance</a>
-      <a href="#work">Work</a>
-      <a href="#about">About</a>
-      <a href="#contact" class="btn btn-sm btn-blue">Start a project</a>
-    </nav>
-    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
-    <button class="btn btn-ghost btn-sm intro-skip" id="introSkip" type="button">Skip intro</button>
-  </header>
+<body data-page="home" data-gate>
+  <script src="js/layout.js"></script>
 
   <main>
-    <!-- ============ INTRO: SCROLL BUILD ============ -->
-    <section class="teardown" id="build" aria-label="Scroll-through roof and siding replacement">
-      <div class="td-sticky">
-        <div class="wrap td-grid">
-          <header class="td-head">
-            <p class="label"><span class="dot"></span>A real job, start to finish</p>
-            <h2>Tear it off. <em>Build it right.</em></h2>
-          </header>
-
-          <div class="td-stage">
-            <div class="panel-head"><span>Job CD-2026-014</span><span>Day <b id="tdDay">00</b></span></div>
-            <div class="td-svg-wrap">
-              <canvas id="tdCanvas" role="img" aria-label="A 3D house has its old roof and siding torn off and replaced as you scroll"></canvas>
-              <div class="td-loading">Loading the 3D house…</div>
-              <div class="td-hint" id="tdHint">Scroll <span>↓</span></div>
-            </div>
-          </div>
-
-          <div class="td-hud">
-            <ol class="td-phases">
-              <li>Inspect</li><li>Tear-off</li><li>Dry-in</li><li>Rebuild</li><li>Finish</li>
-            </ol>
-            <div class="td-progress"><span id="tdPhaseLabel">Phase 01 · Inspect</span><i><b id="tdBar"></b></i><span id="tdPct">0%</span></div>
-            <article class="td-card" id="tdCard" aria-live="polite"></article>
-            <dl class="td-read">
-              <div><dt>Roof squares</dt><dd id="tdRoof">0 / 34</dd></div>
-              <div><dt>Siding</dt><dd id="tdSiding">0%</dd></div>
-            </dl>
-            <div class="td-cta" id="tdCta">
-              <a href="#home" class="btn btn-blue btn-sm">Enter the site</a>
-              <a href="#visualizer" class="btn btn-ghost btn-sm">Design my house</a>
-            </div>
-            <input type="range" id="tdRange" class="td-range" min="0" max="1000" value="1000" aria-label="Build progress" hidden />
-          </div>
-        </div>
-      </div>
+    <!-- ============ INTRO: FULL-JOB WALKTHROUGH ============ -->
+    <section class="proc" id="build" data-process="full" data-gate aria-label="Scroll-through roof and siding replacement">
+      <noscript><div class="wrap section"><h1>Tear it off. Build it right.</h1></div></noscript>
     </section>
 
-    <!-- ============ HERO ============ -->
+    <!-- ============ HERO: WHO I AM + WHAT I DO ============ -->
     <section class="hero" id="home">
       <div class="wrap hero-inner">
         <div class="hero-copy">
-          <p class="label">Roofing · Exteriors · Additions — <span data-site="serviceArea">your area</span></p>
+          <p class="label">Roofing · Siding · Windows · Gutters — <span data-site="serviceArea">your area</span></p>
           <h1 class="hero-title">Construction <em>Consultant</em></h1>
-          <p class="hero-sub">See your home before it's built. I design, price and manage roofing and exterior projects, so you know exactly how it will look and what it will cost before anyone climbs a ladder.</p>
+          <p class="hero-sub">I'm <span data-site="name">Colin</span>. I sell, design and manage roofing and exterior projects, and I show you exactly how it will look and what it will cost before anyone climbs a ladder.</p>
           <div class="hero-cta">
-            <a href="#visualizer" class="btn btn-blue">Design my exterior</a>
-            <a href="#estimate" class="btn btn-ghost">Get a ballpark</a>
+            <a href="#contact" class="btn btn-blue">Start a project</a>
+            <a href="#trades" class="btn btn-ghost">See how each job is built</a>
           </div>
         </div>
         <ul class="hero-points">
@@ -109,375 +55,55 @@
       </div>
     </section>
 
-    <!-- ============ SERVICES ============ -->
-    <section class="section tone-light services" aria-labelledby="svc-title">
-      <div class="wrap split">
+    <!-- ============ TRADES ============ -->
+    <section class="section tone-light trades" id="trades" aria-labelledby="trades-title">
+      <div class="wrap">
         <header class="sec-head">
-          <p class="label">Services</p>
-          <h2 id="svc-title">One consultant, <em>every trade.</em></h2>
-          <p class="sec-sub">From the first look to the final walk-through, you deal with one person who knows the whole house.</p>
+          <p class="label">What I do</p>
+          <h2 id="trades-title">Pick a job. <em>Watch it built.</em></h2>
+          <p class="sec-sub">Each one is a full-screen 3D walkthrough. Scroll through it and every material is labeled and explained, in the order a good crew installs it.</p>
         </header>
-        <div class="svc-grid">
-          <article class="svc">
+        <div class="trade-grid">
+          <a class="trade" href="roofing.html">
+            <span class="trade-n">01</span>
             <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 26 24 8l20 18M10 22v20h28V22"/><path d="M18 42V30h12v12"/></svg>
             <h3>Roofing</h3>
-            <p>Inspections, storm and insurance claims, material selection and full replacements in shingle, metal and specialty roofing.</p>
-          </article>
-          <article class="svc">
-            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="36" height="36" rx="4"/><path d="M6 18h36M18 6v36" opacity=".5"/><circle cx="30" cy="30" r="5"/></svg>
-            <h3>3D design</h3>
-            <p>Try darker roofs, new siding, black windows or a new door on a 3D home, or on a photo of your own.</p>
-          </article>
-          <article class="svc">
-            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40V14h9v26M21 40V22h9v18M34 40V8h7v32"/><path d="M4 42h40"/></svg>
-            <h3>Project management</h3>
-            <p>Scheduling, crews, permits, materials and quality checks. You get updates; I chase the details.</p>
-          </article>
-          <article class="svc">
-            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 42h36M10 42V22l14-12 14 12v20"/><rect x="18" y="26" width="12" height="16"/></svg>
-            <h3>Exterior consulting</h3>
-            <p>Siding, windows, doors, gutters and additions planned as one cohesive look instead of piecemeal guesses.</p>
-          </article>
+            <p>Tear-off, decking repair, ice &amp; water, underlayment, shingles, flashing and ventilation.</p>
+            <span class="trade-go">14 steps · Watch →</span>
+          </a>
+          <a class="trade" href="siding.html">
+            <span class="trade-n">02</span>
+            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="8" width="36" height="34"/><path d="M6 15h36M6 22h36M6 29h36M6 36h36"/></svg>
+            <h3>Siding</h3>
+            <p>Strip to the sheathing, house wrap, flashing, starter, lap siding, trim and stone.</p>
+            <span class="trade-go">8 steps · Watch →</span>
+          </a>
+          <a class="trade" href="windows.html">
+            <span class="trade-n">03</span>
+            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36"/><path d="M24 6v36M10 24h28"/></svg>
+            <h3>Windows</h3>
+            <p>Removal, rough opening, sill pan, setting the unit, flashing tape and trim.</p>
+            <span class="trade-go">6 steps · Watch →</span>
+          </a>
+          <a class="trade" href="gutters.html">
+            <span class="trade-n">04</span>
+            <svg class="svc-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 12h40v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M36 22v20M32 42h8"/></svg>
+            <h3>Gutters</h3>
+            <p>Fascia check, hidden hangers, seamless runs, downspouts and guards.</p>
+            <span class="trade-go">6 steps · Watch →</span>
+          </a>
+        </div>
+        <div class="tool-row">
+          <a href="design.html"><b>Design in 3D</b><span>Try colors on a real-looking home or your own photo</span></a>
+          <a href="estimate.html"><b>Ballpark estimate</b><span>A realistic range in seconds</span></a>
+          <a href="insurance.html"><b>Insurance claims</b><span>When to file and how I help</span></a>
+          <a href="checklist.html"><b>Homeowner checklist</b><span>Keep your home safe during the job</span></a>
         </div>
       </div>
     </section>
 
-    <!-- ============ VISUALIZER ============ -->
-    <section class="section visualizer" id="visualizer" aria-labelledby="viz-title">
-      <div class="wrap">
-        <header class="sec-head center">
-          <p class="label">Exterior design studio</p>
-          <h2 id="viz-title">Design <em>your</em> exterior</h2>
-          <p class="sec-sub">Real product lines and real colors. Spin the 3D home and build your look surface by surface, or upload a photo of your own house.</p>
-        </header>
-
-        <div class="vz">
-          <div class="vz-top">
-            <div class="viz-tabs" role="tablist">
-              <button role="tab" aria-selected="true" data-tab="model">3D home</button>
-              <button role="tab" aria-selected="false" data-tab="photo">Your photo</button>
-            </div>
-            <div class="vz-styles">
-              <span class="label">Styles</span>
-              <div class="preset-row" id="presetRow"></div>
-            </div>
-          </div>
-
-          <div class="vz-body">
-            <div class="vz-stage">
-              <div class="panel-head"><span id="vzTitle">Custom build</span><span id="vzMode">Live 3D</span></div>
-
-              <div class="vz-pane" data-pane="model">
-                <canvas id="vzCanvas" aria-label="Interactive 3D house"></canvas>
-                <div class="vz-loading" id="vzLoading">Loading the 3D home…</div>
-                <div class="vz-tools">
-                  <div class="vz-views">
-                    <button data-view="left">Left</button><button data-view="front" class="is-on">Front</button><button data-view="right">Right</button><button data-view="aerial">Aerial</button>
-                  </div>
-                  <div class="vz-actions">
-                    <button id="vzCompare" aria-pressed="false">Before / after</button>
-                    <button id="vzDusk" aria-pressed="false">Dusk</button>
-                  </div>
-                </div>
-                <p class="vz-tip">Drag to orbit · scroll or pinch to zoom</p>
-              </div>
-
-              <div class="vz-pane" data-pane="photo" hidden>
-                <div class="stage-inner photo-stage" id="photoStage">
-                  <label class="dropzone" id="dropzone">
-                    <input type="file" accept="image/*" id="photoInput" />
-                    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 32V10M14 20l10-10 10 10M8 34v6h32v-6"/></svg>
-                    <strong>Upload a photo of your house</strong>
-                    <span>Straight-on, in daylight, works best</span>
-                  </label>
-                  <canvas id="photoCanvas" hidden></canvas>
-                  <div class="brush-cursor" id="brushCursor" hidden></div>
-                </div>
-                <div class="stage-foot photo-tools" id="photoTools" hidden>
-                  <div class="tool-group" role="group" aria-label="Zone to paint">
-                    <span>Paint</span>
-                    <button class="chip is-on" data-zone="roof">Roof</button>
-                    <button class="chip" data-zone="siding">Siding</button>
-                    <button class="chip" data-zone="trim">Trim</button>
-                    <button class="chip" data-zone="door">Door</button>
-                  </div>
-                  <div class="tool-group">
-                    <button class="chip" id="eraserBtn">Eraser</button>
-                    <label class="range">Brush <input type="range" id="brushSize" min="6" max="120" value="40"/></label>
-                    <label class="range">Strength <input type="range" id="strength" min="20" max="100" value="80"/></label>
-                  </div>
-                  <div class="tool-group">
-                    <button class="chip" id="maskBtn">Show mask</button>
-                    <button class="chip" id="compareBtn">Hold: original</button>
-                    <button class="chip" id="clearZoneBtn">Clear zone</button>
-                    <button class="chip" id="newPhotoBtn">New photo</button>
-                  </div>
-                  <p class="hint">Brush over the roof, then switch zones and paint the siding, trim or door. Colors from the panel apply live.</p>
-                </div>
-              </div>
-            </div>
-
-            <aside class="vz-side">
-              <nav class="vz-rail" id="vzRail" aria-label="Surfaces"></nav>
-              <div class="vz-panel" id="vzPanel"></div>
-            </aside>
-          </div>
-
-          <div class="vz-foot">
-            <div class="vz-summary">
-              <span class="label">My design</span>
-              <ul id="vzSummary"></ul>
-            </div>
-            <div class="vz-cta">
-              <button class="btn btn-ghost btn-sm" id="vzSave">Save</button>
-              <button class="btn btn-ghost btn-sm" id="vzShare">Share link</button>
-              <button class="btn btn-ghost btn-sm" id="vzDownload">Download 4K</button>
-              <button class="btn btn-ghost btn-sm" id="vzEstimate">Price this</button>
-              <button class="btn btn-blue btn-sm" id="sendBuild">Send to Colin</button>
-            </div>
-            <div class="vz-saved" id="vzSaved"></div>
-            <p class="fine">Colors are on-screen approximations of each manufacturer's published colors. Always confirm with physical samples. Brand names belong to their owners.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ ESTIMATOR ============ -->
-    <section class="section band estimator" id="estimate" aria-labelledby="est-title">
-      <div class="wrap">
-        <header class="sec-head">
-          <p class="label">Ballpark estimate</p>
-          <h2 id="est-title">Know the number <em>before</em> you call.</h2>
-          <p class="sec-sub">Switch on the work you're considering. You'll get a realistic range in seconds. It's not a quote, but it's enough to plan with.</p>
-        </header>
-
-        <div class="est-layout">
-          <div class="est-left">
-            <div class="est-fields">
-              <label class="field">
-                <span>Home footprint (sq ft, ground floor)</span>
-                <input type="number" id="footprint" min="400" max="10000" step="50" value="1600" inputmode="numeric"/>
-              </label>
-              <label class="field">
-                <span>Stories</span>
-                <select id="stories"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select>
-              </label>
-              <label class="field">
-                <span>Roof pitch</span>
-                <select id="pitch"><option value="low">Low / walkable</option><option value="med" selected>Medium</option><option value="steep">Steep</option></select>
-              </label>
-              <label class="field">
-                <span>Market</span>
-                <select id="market"><option value="0.88">Lower cost area</option><option value="1" selected>Average</option><option value="1.18">High cost area</option><option value="1.35">Major metro</option></select>
-              </label>
-            </div>
-            <div class="est-items" id="estItems"></div>
-          </div>
-
-          <aside class="est-out" aria-live="polite">
-            <span class="label">Estimated investment</span>
-            <div class="est-range"><span id="estLow">$0</span><i>–</i><span id="estHigh">$0</span></div>
-            <div class="est-bar"><b id="estBar"></b></div>
-            <ul class="est-breakdown" id="estBreakdown"><li class="empty">Select at least one job.</li></ul>
-            <button class="btn btn-blue btn-block" id="sendEstimate">Get a real quote</button>
-            <p class="fine">Ballpark only. Real pricing depends on inspection, decking, code, access and materials. Insurance work can change your out-of-pocket cost dramatically.</p>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ INSURANCE CLAIMS ============ -->
-    <section class="section tone-light insurance" id="insurance" aria-labelledby="ins-title">
-      <div class="wrap">
-        <header class="sec-head">
-          <p class="label">Storm damage &amp; insurance</p>
-          <h2 id="ins-title">Claims, <em>in plain English.</em></h2>
-          <p class="sec-sub">How roof and exterior claims actually work, when filing makes sense, and where I fit in. No storm-chaser games.</p>
-        </header>
-
-        <div class="ins-when">
-          <article class="ins-col">
-            <h3><span class="ins-dot ok"></span>Usually worth a claim</h3>
-            <ul>
-              <li><b>Hail damage.</b> Bruised or cracked shingles, dents in gutters, vents, downspouts and AC fins. Dented soft metals are often the first proof hail hit your property.</li>
-              <li><b>Wind damage.</b> Missing, creased or lifted shingles, torn ridge cap, siding blown off.</li>
-              <li><b>A fallen tree or limb</b> that damaged the roof, siding, gutters or windows.</li>
-              <li><b>A sudden leak</b> from storm damage that's now staining ceilings or walls.</li>
-              <li><b>Damage well above your deductible</b>, reported within your policy's deadline. Many give you a year or less.</li>
-            </ul>
-          </article>
-          <article class="ins-col">
-            <h3><span class="ins-dot no"></span>Think twice, or skip it</h3>
-            <ul>
-              <li><b>Age and wear.</b> Curling, granule loss from age and a roof at the end of its life are maintenance, not covered damage.</li>
-              <li><b>Damage close to your deductible.</b> A $2,400 repair on a $2,000 deductible pays little and still goes on your record.</li>
-              <li><b>Small repairs</b> like a few blown-off shingles. Paying out of pocket protects your claims history.</li>
-              <li><b>Pre-existing or neglected issues</b> such as old leaks, clogged gutters or failed flashing.</li>
-              <li><b>Several recent claims.</b> They can raise premiums or affect renewal. Ask your agent.</li>
-            </ul>
-          </article>
-        </div>
-
-        <div class="ins-check" id="insCheck">
-          <div class="ins-check-head">
-            <h3>Should I file?</h3>
-            <p>Rough numbers in, a straight answer out. Your adjuster and policy make the real call.</p>
-          </div>
-          <div class="ins-check-body">
-            <form class="ins-inputs" id="insForm" onsubmit="return false">
-              <label class="field"><span>What caused it?</span>
-                <select id="insCause">
-                  <option value="hail">Hail</option>
-                  <option value="wind">Wind</option>
-                  <option value="tree">Fallen tree / limb</option>
-                  <option value="leak">Sudden storm leak</option>
-                  <option value="age">Age / normal wear</option>
-                </select>
-              </label>
-              <label class="field"><span>Estimated repair or replacement ($)</span>
-                <input id="insCost" type="number" min="0" step="500" value="18000" inputmode="numeric" />
-                <button type="button" class="ins-link" id="insUseEstimate">Use my ballpark</button>
-              </label>
-              <label class="field"><span>Deductible type</span>
-                <select id="insDedType">
-                  <option value="flat">Flat dollar amount</option>
-                  <option value="pct">Percent of dwelling coverage</option>
-                </select>
-              </label>
-              <label class="field" id="insFlatWrap"><span>Deductible ($)</span>
-                <input id="insDed" type="number" min="0" step="250" value="1500" inputmode="numeric" />
-              </label>
-              <label class="field" id="insPctWrap" hidden><span>Percent · dwelling coverage</span>
-                <span class="ins-pair">
-                  <select id="insPct"><option value="0.01">1%</option><option value="0.02" selected>2%</option><option value="0.05">5%</option></select>
-                  <input id="insCovA" type="number" min="0" step="10000" value="350000" inputmode="numeric" aria-label="Dwelling coverage in dollars" />
-                </span>
-              </label>
-              <label class="field"><span>Roof age (years)</span>
-                <input id="insAge" type="number" min="0" max="60" value="12" inputmode="numeric" />
-              </label>
-              <label class="field"><span>Policy pays</span>
-                <select id="insPolicy">
-                  <option value="rcv">Replacement cost (RCV)</option>
-                  <option value="acv">Actual cash value (ACV)</option>
-                  <option value="unsure">Not sure</option>
-                </select>
-              </label>
-              <label class="field"><span>Claims in the last 5 years</span>
-                <select id="insPrior"><option value="0">None</option><option value="1">One</option><option value="2">Two or more</option></select>
-              </label>
-            </form>
-            <div class="ins-result" id="insResult" aria-live="polite"></div>
-          </div>
-        </div>
-
-        <div class="ins-flow">
-          <h3 class="sub-title">How a claim goes, start to finish</h3>
-          <ol class="ins-steps">
-            <li><span>01</span><div><h4>Stay safe, document, protect</h4><p>Note the storm date and take photos from the ground. Tarp or move belongings to stop further damage, and keep the receipts. Reasonable emergency repairs are usually reimbursable.</p><p class="ins-me">I'll tarp it and photograph everything.</p></div></li>
-            <li><span>02</span><div><h4>Free inspection before you file</h4><p>A professional checks the roof, gutters, soft metals, siding and windows, and tells you honestly whether it's storm damage above your deductible.</p><p class="ins-me">A photo report and a straight answer, even if it's "don't file."</p></div></li>
-            <li><span>03</span><div><h4>You file the claim</h4><p>Call your insurer or use their app. Write down your claim number, adjuster and any deadlines.</p><p class="ins-me">I'll walk you through what to say and send.</p></div></li>
-            <li><span>04</span><div><h4>Adjuster inspection</h4><p>The insurer sends an adjuster. Having your contractor there makes sure nothing is missed.</p><p class="ins-me">With your OK, I meet the adjuster on the roof.</p></div></li>
-            <li><span>05</span><div><h4>Review the estimate</h4><p>Compare the adjuster's scope line by line. Missed items are documented and submitted as a supplement. If you still disagree: re-inspection, your policy's appraisal clause, or a licensed public adjuster.</p><p class="ins-me">Line-by-line comparison and supplement documentation.</p></div></li>
-            <li><span>06</span><div><h4>First check arrives</h4><p>On an RCV policy, usually the actual cash value minus your deductible. Your mortgage company may need to endorse it.</p></div></li>
-            <li><span>07</span><div><h4>Choose materials and build</h4><p>Pick products and colors, schedule the crew, get it done right. Upgrades beyond restoring the damage are your choice and your cost.</p><p class="ins-me">Design, ordering and crew management, start to finish.</p></div></li>
-            <li><span>08</span><div><h4>Close it out</h4><p>The final invoice and completion photos release the held-back depreciation. You pay your deductible, the same as any repair.</p><p class="ins-me">Final invoice, photos and paperwork.</p></div></li>
-          </ol>
-        </div>
-
-        <div class="ins-terms">
-          <h3 class="sub-title">Words on your paperwork</h3>
-          <div class="accordion">
-            <details><summary>Deductible</summary><p>What you pay before insurance pays. Wind/hail deductibles are often a <b>percentage</b> of your dwelling coverage: 2% of $350,000 is $7,000.</p></details>
-            <details><summary>RCV · replacement cost value</summary><p>Pays to replace with new materials. The first check usually holds back depreciation; you get it once the work is finished and invoiced.</p></details>
-            <details><summary>ACV · actual cash value</summary><p>Pays the depreciated value of your old roof. On an older roof that can be a fraction of the replacement cost.</p></details>
-            <details><summary>Recoverable depreciation</summary><p>The amount held back on an RCV policy. It's your money, but you have to finish the job and submit the final invoice, usually within a set deadline.</p></details>
-            <details><summary>Scope of loss</summary><p>The adjuster's line-item estimate of what's damaged and what it pays for. Read every line.</p></details>
-            <details><summary>Supplement</summary><p>A request to add items the original estimate missed, like drip edge, ice &amp; water shield, starter strip or code-required work, backed by photos and measurements.</p></details>
-            <details><summary>Code upgrade · ordinance or law</summary><p>Optional coverage that pays for work current building code requires, even if your old roof didn't have it.</p></details>
-            <details><summary>Two-party check</summary><p>If you have a mortgage, checks are often made out to you and your lender, who has to endorse them before funds are released.</p></details>
-          </div>
-        </div>
-
-        <div class="ins-role">
-          <article>
-            <h3>What I do for you</h3>
-            <ul>
-              <li>Free storm inspection with a photo report</li>
-              <li>An honest file-or-don't recommendation</li>
-              <li>Meet your adjuster on site</li>
-              <li>A detailed line-item estimate for your claim</li>
-              <li>Supplement documentation for missed and code-required items</li>
-              <li>Manage the build and the paperwork to close the claim</li>
-            </ul>
-          </article>
-          <article>
-            <h3>What I won't do</h3>
-            <ul>
-              <li>Waive, absorb or "cover" your deductible. It's illegal in many states and can void a claim.</li>
-              <li>Negotiate your settlement. In most states only licensed public adjusters or attorneys can.</li>
-              <li>Ask you to sign over your insurance benefits on the spot.</li>
-              <li>Inflate damage or bill for work that wasn't done.</li>
-            </ul>
-          </article>
-          <article>
-            <h3>Storm-chaser red flags</h3>
-            <ul>
-              <li>Door-knockers right after a storm with out-of-area plates</li>
-              <li>"Free roof" or "we'll cover your deductible"</li>
-              <li>Pressure to sign before an inspection or adjuster visit</li>
-              <li>Large cash deposits up front</li>
-              <li>No local address, license or references</li>
-            </ul>
-          </article>
-        </div>
-
-        <div class="ins-cta">
-          <div>
-            <h3>Had a storm? <em>Call me before you file.</em></h3>
-            <p>I'll inspect, tell you straight whether it's worth a claim, and if it is, I'll be with you from the adjuster visit to the final paperwork.</p>
-          </div>
-          <button class="btn btn-blue" id="insBook">Book a storm inspection</button>
-        </div>
-        <p class="fine">General information, not legal or insurance advice. Coverage depends on your policy, and claim rules differ by state. Read your policy and talk with your agent.</p>
-      </div>
-    </section>
-
-    <!-- ============ MATERIALS GLOSSARY ============ -->
-    <section class="section materials" id="materials" aria-labelledby="mat-title">
-      <div class="wrap split">
-        <header class="sec-head">
-          <p class="label">Anatomy of a re-roof</p>
-          <h2 id="mat-title">Every layer, <em>explained.</em></h2>
-          <p class="sec-sub">The materials in a full roof and siding replacement, in the order a pro installs them. Know what you're paying for, and what to ask.</p>
-        </header>
-        <div class="mat-grid" id="materialsList"></div>
-      </div>
-    </section>
-
-    <!-- ============ WORK ============ -->
-    <section class="section band work" id="work" aria-labelledby="work-title">
-      <div class="wrap">
-        <header class="sec-head row">
-          <div>
-            <p class="label">Selected work</p>
-            <h2 id="work-title">Past <em>projects</em></h2>
-          </div>
-          <div class="work-filter" id="workFilter">
-            <button class="chip is-on" data-f="all">All</button>
-            <button class="chip" data-f="roofing">Roofing</button>
-            <button class="chip" data-f="siding">Siding</button>
-            <button class="chip" data-f="windows">Windows</button>
-            <button class="chip" data-f="additions">Additions</button>
-            <button class="chip" data-f="exterior">Full exterior</button>
-          </div>
-        </header>
-        <div class="work-grid" id="workGrid"></div>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT ============ -->
-    <section class="section tone-light about" id="about" aria-labelledby="about-title">
+<!-- ============ ABOUT ============ -->
+    <section class="section about" id="about" aria-labelledby="about-title">
       <div class="wrap about-grid">
         <div class="about-photo">
           <div class="portrait">
@@ -500,8 +126,8 @@
       </div>
     </section>
 
-    <!-- ============ CONTACT / LEAD ============ -->
-    <section class="section contact" id="contact" aria-labelledby="contact-title">
+<!-- ============ CONTACT / LEAD ============ -->
+    <section class="section tone-light contact" id="contact" aria-labelledby="contact-title">
       <div class="wrap contact-grid">
         <div class="contact-copy">
           <p class="label">Start a project</p>
@@ -585,36 +211,10 @@
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="wrap footer-inner">
-      <div class="footer-brand">
-        <span class="footer-big">CD <em>Consulting</em></span>
-        <span class="label">Construction consultant · Roofing · Exteriors · 3D design</span>
-      </div>
-      <nav class="footer-links" aria-label="Footer">
-        <a href="#visualizer">Design</a><a href="#estimate">Estimate</a><a href="#insurance">Insurance</a><a href="#materials">Materials</a><a href="#work">Work</a><a href="#contact">Contact</a>
-      </nav>
-      <div class="footer-meta">
-        <span>© <span id="year"></span> <span data-site="brand">CD Consulting</span></span>
-        <a href="#home">Back to top ↑</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- project modal -->
-  <dialog class="modal" id="projectModal">
-    <div class="modal-inner">
-      <div class="panel-head"><span id="modalId">Project</span><button class="modal-x" aria-label="Close">✕</button></div>
-      <div class="modal-body" id="modalBody"></div>
-    </div>
-  </dialog>
-
+  <footer class="footer"></footer>
   <script src="js/config.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/estimator.js"></script>
   <script src="js/lead.js"></script>
-  <script src="js/insurance.js"></script>
-  <script type="module" src="js/build3d.js"></script>
-  <script type="module" src="js/viz3d.js"></script>
+  <script type="module" src="js/process.js"></script>
 </body>
 </html>

@@ -90,26 +90,14 @@
     lastSummary = `${V[0]} | cause: ${$("#insCause").selectedOptions[0].text}, est. ${money(cost)}, deductible ${money(ded)}, roof ${age} yrs, ${$("#insPolicy").selectedOptions[0].text}, prior claims: ${$("#insPrior").selectedOptions[0].text}`;
   }
 
-  /* booking: check Storm / Insurance, open claim fields, carry the quick-check over */
+  /* booking: tick Storm / Insurance on the lead form and carry the quick check over */
   function book(withCheck) {
-    const box = document.querySelector('input[name=interest][value="Storm / Insurance"]');
-    if (box) { box.checked = true; box.dispatchEvent(new Event("change", { bubbles: true })); }
-    const field = $("#claimCheckField");
-    if (field && withCheck) field.value = lastSummary;
-    const msg = document.querySelector("textarea[name=message]");
-    if (msg && !msg.value) msg.placeholder = "e.g. Hail last Tuesday. Dents in the gutters, a few shingles missing on the back side. Haven't filed yet.";
+    if (withCheck) window.CD.attach("claim", lastSummary);
+    const list = window.CD.attachments.interests || [];
+    if (!list.includes("Storm / Insurance")) window.CD.attach("interests", [...list, "Storm / Insurance"]);
     window.CD.goTo("contact");
   }
   $("#insBook").addEventListener("click", () => book(false));
-
-  // claim details appear in the lead form only when Storm / Insurance is checked
-  const claimFields = $("#claimFields");
-  const storm = document.querySelector('input[name=interest][value="Storm / Insurance"]');
-  if (claimFields && storm) {
-    const sync = () => { claimFields.hidden = !storm.checked; };
-    storm.addEventListener("change", sync);
-    sync();
-  }
 
   calc();
 })();

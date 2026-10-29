@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Design your exterior in 3D | CD Consulting</title>
+  <meta name="description" content="Try real roofing, siding, window, door and gutter colors on a high-definition 3D home, or paint them onto a photo of your own house." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+    { "imports": { "three": "./js/vendor/three/three.module.min.js", "three/addons/": "./js/vendor/three/addons/" } }
+  </script>
+</head>
+<body data-page="design">
+  <script src="js/layout.js"></script>
+
+  <main>
+<!-- ============ VISUALIZER ============ -->
+    <section class="section visualizer" id="visualizer" aria-labelledby="viz-title">
+      <div class="wrap">
+        <header class="sec-head center">
+          <p class="label">Exterior design studio</p>
+          <h1 id="viz-title">Design <em>your</em> exterior</h1>
+          <p class="sec-sub">Real product lines and real colors. Spin the 3D home and build your look surface by surface, or upload a photo of your own house.</p>
+        </header>
+
+        <div class="vz">
+          <div class="vz-top">
+            <div class="viz-tabs" role="tablist">
+              <button role="tab" aria-selected="true" data-tab="model">3D home</button>
+              <button role="tab" aria-selected="false" data-tab="photo">Your photo</button>
+            </div>
+            <div class="vz-styles">
+              <span class="label">Styles</span>
+              <div class="preset-row" id="presetRow"></div>
+            </div>
+          </div>
+
+          <div class="vz-body">
+            <div class="vz-stage">
+              <div class="panel-head"><span id="vzTitle">Custom build</span><span id="vzMode">Live 3D</span></div>
+
+              <div class="vz-pane" data-pane="model">
+                <canvas id="vzCanvas" aria-label="Interactive 3D house"></canvas>
+                <div class="vz-loading" id="vzLoading">Loading the 3D home…</div>
+                <div class="vz-tools">
+                  <div class="vz-views">
+                    <button data-view="left">Left</button><button data-view="front" class="is-on">Front</button><button data-view="right">Right</button><button data-view="aerial">Aerial</button>
+                  </div>
+                  <div class="vz-actions">
+                    <button id="vzCompare" aria-pressed="false">Before / after</button>
+                    <button id="vzDusk" aria-pressed="false">Dusk</button>
+                  </div>
+                </div>
+                <p class="vz-tip">Drag to orbit · scroll or pinch to zoom</p>
+              </div>
+
+              <div class="vz-pane" data-pane="photo" hidden>
+                <div class="stage-inner photo-stage" id="photoStage">
+                  <label class="dropzone" id="dropzone">
+                    <input type="file" accept="image/*" id="photoInput" />
+                    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 32V10M14 20l10-10 10 10M8 34v6h32v-6"/></svg>
+                    <strong>Upload a photo of your house</strong>
+                    <span>Straight-on, in daylight, works best</span>
+                  </label>
+                  <canvas id="photoCanvas" hidden></canvas>
+                  <div class="brush-cursor" id="brushCursor" hidden></div>
+                </div>
+                <div class="stage-foot photo-tools" id="photoTools" hidden>
+                  <div class="tool-group" role="group" aria-label="Zone to paint">
+                    <span>Paint</span>
+                    <button class="chip is-on" data-zone="roof">Roof</button>
+                    <button class="chip" data-zone="siding">Siding</button>
+                    <button class="chip" data-zone="trim">Trim</button>
+                    <button class="chip" data-zone="door">Door</button>
+                  </div>
+                  <div class="tool-group">
+                    <button class="chip" id="eraserBtn">Eraser</button>
+                    <label class="range">Brush <input type="range" id="brushSize" min="6" max="120" value="40"/></label>
+                    <label class="range">Strength <input type="range" id="strength" min="20" max="100" value="80"/></label>
+                  </div>
+                  <div class="tool-group">
+                    <button class="chip" id="maskBtn">Show mask</button>
+                    <button class="chip" id="compareBtn">Hold: original</button>
+                    <button class="chip" id="clearZoneBtn">Clear zone</button>
+                    <button class="chip" id="newPhotoBtn">New photo</button>
+                  </div>
+                  <p class="hint">Brush over the roof, then switch zones and paint the siding, trim or door. Colors from the panel apply live.</p>
+                </div>
+              </div>
+            </div>
+
+            <aside class="vz-side">
+              <nav class="vz-rail" id="vzRail" aria-label="Surfaces"></nav>
+              <div class="vz-panel" id="vzPanel"></div>
+            </aside>
+          </div>
+
+          <div class="vz-foot">
+            <div class="vz-summary">
+              <span class="label">My design</span>
+              <ul id="vzSummary"></ul>
+            </div>
+            <div class="vz-cta">
+              <button class="btn btn-ghost btn-sm" id="vzSave">Save</button>
+              <button class="btn btn-ghost btn-sm" id="vzShare">Share link</button>
+              <button class="btn btn-ghost btn-sm" id="vzDownload">Download 4K</button>
+              <button class="btn btn-ghost btn-sm" id="vzEstimate">Price this</button>
+              <button class="btn btn-blue btn-sm" id="sendBuild">Send to Colin</button>
+            </div>
+            <div class="vz-saved" id="vzSaved"></div>
+            <p class="fine">Colors are on-screen approximations of each manufacturer's published colors. Always confirm with physical samples. Brand names belong to their owners.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script type="module" src="js/viz3d.js"></script>
+</body>
+</html>
