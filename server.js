@@ -87,7 +87,8 @@ async function emailLead(f, files) {
   const key = process.env.RESEND_API_KEY, to = process.env.LEAD_TO_EMAIL;
   if (!key || !to) return false;
   const rows = [["Name", f.name], ["Phone", f.phone], ["Email", f.email], ["Address", f.address], ["Interested in", f.interest],
-    ["Timeline", f.timeline], ["Budget", f.budget], ["Message", f.message], ["Design build", f.build], ["Ballpark", f.estimate]];
+    ["Timeline", f.timeline], ["Budget", f.budget], ["Message", f.message], ["Design build", f.build], ["Ballpark", f.estimate],
+    ["Date of loss", f.loss_date], ["Insurance company", f.carrier], ["Claim #", f.claim_no], ["Claim status", f.claim_status], ["Claim check", f.claim_check]];
   const html = `<h2>New lead: ${esc(f.name)}</h2><table cellpadding="6" style="border-collapse:collapse">${rows
     .filter(([, v]) => v).map(([k, v]) => `<tr><td style="color:#666;vertical-align:top"><b>${k}</b></td><td>${esc(v).replace(/ \| /g, "<br>")}</td></tr>`).join("")}</table>
     <p>${files.length} photo(s) attached.</p>`;
