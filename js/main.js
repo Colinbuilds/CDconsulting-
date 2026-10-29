@@ -90,7 +90,7 @@
   // ---- portfolio ----
   const projects = window.PROJECTS || [];
   const grid = $("#workGrid");
-  const CAT = { roofing: "ROOFING", siding: "SIDING", windows: "WINDOWS", additions: "ADDITION", exterior: "FULL EXTERIOR" };
+  const CAT = { roofing: "Roofing", siding: "Siding", windows: "Windows", additions: "Addition", exterior: "Full exterior" };
   const phSVG = (cat) => {
     const art = {
       roofing: '<path d="M10 70 60 25l50 45M22 60v35h76V60"/><path d="M35 50l25-22 25 22" stroke-dasharray="3 4"/>',
@@ -99,7 +99,7 @@
       additions: '<path d="M10 95V55l30-25 30 25v40z"/><path d="M70 95V65h40v30" stroke-dasharray="4 3"/><path d="M70 65l20-15 20 15" stroke-dasharray="4 3"/>',
       exterior: '<path d="M10 95V50l50-35 50 35v45z"/><rect x="50" y="65" width="20" height="30"/><rect x="22" y="58" width="18" height="16"/><rect x="80" y="58" width="18" height="16"/>',
     };
-    return `<div class="ph"><svg viewBox="0 0 120 110">${art[cat] || art.exterior}</svg><span>PHOTO PENDING</span></div>`;
+    return `<div class="ph"><svg viewBox="0 0 120 110">${art[cat] || art.exterior}</svg><span>Photo coming soon</span></div>`;
   };
   const media = (src, cat, alt) =>
     src ? `<img src="${src}" alt="${alt}" loading="lazy" />` : phSVG(cat);
@@ -114,8 +114,7 @@
       card.style.animationDelay = grid.children.length * 60 + "ms";
       card.innerHTML = `
         <div class="card-media">${media(p.after || p.before, p.category, p.title)}
-          <span class="card-tag">${CAT[p.category] || p.category.toUpperCase()}</span>
-          <span class="card-no">FILE-${String(idx + 1).padStart(3, "0")}</span>
+          <span class="card-tag">${CAT[p.category] || p.category}</span>
         </div>
         <div class="card-body">
           <span class="meta">${p.location} · ${p.year}</span>
@@ -136,14 +135,14 @@
 
   const modal = $("#projectModal");
   function openProject(p, idx) {
-    $("#modalId").textContent = `FILE-${String(idx + 1).padStart(3, "0")} // ${CAT[p.category] || ""}`;
+    $("#modalId").textContent = `Project ${String(idx + 1).padStart(2, "0")} · ${CAT[p.category] || ""}`;
     const hasBA = p.before && p.after;
     $("#modalBody").innerHTML = `
       ${hasBA ? `
         <div class="ba" style="--pos:50%">
           <div class="layer">${media(p.before, p.category, p.title + " before")}</div>
           <div class="layer after-layer">${media(p.after, p.category, p.title + " after")}</div>
-          <span class="lbl l mono">BEFORE</span><span class="lbl r mono">AFTER</span>
+          <span class="lbl l">BEFORE</span><span class="lbl r">AFTER</span>
           <div class="handle"></div>
           <input type="range" min="0" max="100" value="50" aria-label="Before / after slider" />
         </div>` : `<div class="ba">${media(p.after || p.before, p.category, p.title)}</div>`}
@@ -153,7 +152,7 @@
         <p>${p.description}</p>
         <ul class="scope">${(p.scope || []).map((s) => `<li>${s}</li>`).join("")}</ul>
       </div>
-      <a href="#contact" class="btn btn-blue" data-close>Want this on your house? →</a>`;
+      <a href="#contact" class="btn btn-blue" data-close>Want this on your house?</a>`;
     const range = $(".ba input", modal);
     if (range) range.addEventListener("input", () => $(".ba", modal).style.setProperty("--pos", range.value + "%"));
     modal.showModal();

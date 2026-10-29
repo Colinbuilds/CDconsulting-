@@ -144,7 +144,7 @@ function overlay(P) {
 
 /* ---------- HUD + teaching card ---------- */
 const PHASES = [
-  { at: 0, id: "INSPECT" }, { at: 0.12, id: "TEAR-OFF" }, { at: 0.35, id: "DRY-IN" }, { at: 0.555, id: "REBUILD" }, { at: 0.815, id: "FINISH" },
+  { at: 0, id: "Inspect" }, { at: 0.12, id: "Tear-off" }, { at: 0.35, id: "Dry-in" }, { at: 0.555, id: "Rebuild" }, { at: 0.815, id: "Finish" },
 ];
 const h = {
   phases: [...section.querySelectorAll(".td-phases li")],
@@ -163,17 +163,17 @@ function hud(P) {
   if (ph !== lastPhase) {
     lastPhase = ph;
     h.phases.forEach((li, i) => { li.classList.toggle("is-on", i === ph); li.classList.toggle("is-done", i < ph); });
-    h.label.textContent = `PHASE 0${ph + 1} // ${PHASES[ph].id}`;
+    h.label.textContent = `Phase 0${ph + 1} · ${PHASES[ph].id}`;
   }
   const m = currentMaterial(P);
   if (m !== lastCard) {
     lastCard = m;
     if (!m) {
-      h.card.innerHTML = `<p class="td-card-k mono">HOW A ROOF & SIDING JOB REALLY GOES</p><h3>Scroll to start the job.</h3><p>Every material gets labeled as it goes on, in the order a pro installs it.</p>`;
+      h.card.innerHTML = `<p class="td-card-k mono">How a roof &amp; siding job really goes</p><h3>Scroll to start the job.</h3><p>Every material is labeled as it goes on, in the order a pro installs it.</p>`;
     } else {
       const n = MATERIALS.indexOf(m) + 1;
       h.card.innerHTML = `
-        <p class="td-card-k mono">LAYER ${String(n).padStart(2, "0")} / ${MATERIALS.length} · ${GROUPS[m.group].toUpperCase()}</p>
+        <p class="td-card-k mono">Layer ${String(n).padStart(2, "0")} of ${MATERIALS.length} · ${GROUPS[m.group]}</p>
         <h3>${m.name}</h3>
         <p class="td-card-spec mono">${m.spec}</p>
         <p class="td-card-what">${m.what}</p>
@@ -186,9 +186,9 @@ function hud(P) {
   h.bar.style.width = P * 100 + "%";
   h.day.textContent = P < 0.12 ? "00" : P < 0.35 ? "01" : P < 0.66 ? "02" : "03";
   const off = seg(P, ...T.roofOff), on = seg(P, ...T.roofOn);
-  h.roof.textContent = P < 0.45 ? `${Math.round(off * 34)} / 34 OFF` : `${Math.round(on * 34)} / 34 ON`;
+  h.roof.textContent = P < 0.45 ? `${Math.round(off * 34)} / 34 off` : `${Math.round(on * 34)} / 34 on`;
   const so = seg(P, ...T.sidingOff), sn = seg(P, ...T.sidingOn);
-  h.siding.textContent = P < 0.5 ? `${Math.round(so * 100)}% OFF` : `${Math.round(sn * 100)}% ON`;
+  h.siding.textContent = P < 0.5 ? `${Math.round(so * 100)}% off` : `${Math.round(sn * 100)}% on`;
   section.classList.toggle("is-done", P > 0.95);
   if (P > 0.97) unlock();
   h.hint.classList.toggle("is-gone", P > 0.03);
@@ -218,19 +218,18 @@ section.querySelectorAll(".td-cta a").forEach((a) => a.addEventListener("click",
 /* ---------- glossary under the build ---------- */
 const list = document.getElementById("materialsList");
 if (list) {
+  // one accordion per system; each material opens to what / why / pro tip
   list.innerHTML = Object.entries(GROUPS).map(([g, label]) => `
     <div class="mat-group">
-      <h3 class="mono">${label.toUpperCase()}</h3>
-      <ol>${MATERIALS.map((m, i) => m.group !== g ? "" : `
-        <li>
-          <span class="mat-n mono">${String(i + 1).padStart(2, "0")}</span>
-          <div>
-            <h4>${m.name}</h4>
-            <p class="mat-spec mono">${m.spec}</p>
+      <h3>${label}</h3>
+      ${MATERIALS.map((m, i) => m.group !== g ? "" : `
+        <details class="mat-item">
+          <summary><span class="mat-n">${String(i + 1).padStart(2, "0")}</span><span class="mat-name">${m.name}<small>${m.spec}</small></span></summary>
+          <div class="mat-body">
             <p>${m.what} ${m.why}</p>
-            <p class="mat-tip mono"><b>PRO TIP</b> ${m.tip}</p>
+            <p class="mat-tip"><b>PRO TIP</b>${m.tip}</p>
           </div>
-        </li>`).join("")}</ol>
+        </details>`).join("")}
     </div>`).join("");
 }
 
