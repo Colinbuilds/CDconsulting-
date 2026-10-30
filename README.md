@@ -2,15 +2,28 @@
 
 Static site plus a tiny Node server (`server.js`) for the lead form. No build step.
 
+## Pages
+| Page | What's on it |
+|---|---|
+| `index.html` | Full-screen 3D walkthrough of a full roof + siding job (the rest of the page unlocks once it's scrolled through), then who I am + what I do, About, and the lead form |
+| `roofing.html`, `siding.html`, `windows.html`, `gutters.html` | A full-screen 3D walkthrough of that trade, every step explained, then a checklist link and CTA |
+| `design.html` | 3D exterior designer + paint-your-photo |
+| `estimate.html` | Ballpark estimator |
+| `insurance.html` | Insurance claims guide + "Should I file?" check |
+| `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device, prints) |
+| `work.html` | Past projects |
+
+Nav + footer are shared from `js/layout.js`. Anything attached on one page (a design, render, ballpark, claim check) is carried to the lead form on the home page through `sessionStorage`.
+
 ## Make it yours
 | What | Where |
 |---|---|
 | Name, phone, email, service area | `js/config.js` → `SITE` |
 | Past work (photos + descriptions) | `js/config.js` → `PROJECTS`; drop images in `images/projects/` |
 | Your portrait | save as `images/colin.jpg`, then swap the placeholder in the About section of `index.html` |
+| Homeowner checklist items | `LISTS` in `js/checklist.js` |
 | Track-record numbers (roofs, renders) | `data-count` values in the About section of `index.html` |
 | Estimator pricing | `ITEMS` at the top of `js/estimator.js` (installed $ ranges per unit) |
-| Visualizer colors & preset builds | `PALETTE` and `PRESETS` at the top of `js/visualizer.js` |
 
 ## Deploy on Railway
 1. railway.com → **New Project → Deploy from GitHub repo** → `CDconsulting-` (branch `main`). Railway runs `node server.js` (see `railway.json`).
@@ -42,11 +55,13 @@ Both the scroll-through tear-off and the visualizer use one real-time 3D model (
 | Style presets / the "before" house | `PRESETS` and `ORIGINAL` in `js/3d/catalog.js` |
 | House shape (walls, windows, roofs, porch, garage) | `js/3d/house.js` |
 | Lawn, driveway, trees, shrubs | `js/3d/site.js` |
-| Scroll timeline + camera path | `T` and `KEYS` in `js/build3d.js` |
+| Walkthroughs (build timeline, camera path, steps, phases, before/after look) | `PROCESSES` in `js/3d/processes.js` |
+| Teaching text for every material | `MATERIALS` and `EXTRA` in `js/3d/materials.js` |
+| Full-screen scroll player (pinning, labels, cards) | `js/process.js` |
 | Visualizer UI (save, share link, download, "Price this", send to lead form) | `js/viz3d.js` |
 
 Shingles, siding profiles, decking, underlayment and house wrap are generated in code (`js/3d/textures.js`) so any product color can tint them. Lawn, concrete, pavers, stone, bark and mulch are CC0 photo textures from [Poly Haven](https://polyhaven.com) in `images/tex/`.
 
-**HD visualizer:** the visualizer runs in HD mode (`createStage(canvas, { hd: true })`): it lights the house with a real HDR sky (`images/tex/sky.hdr`, Poly Haven "Kloofendal 48d Partly Cloudy", CC0) with a 4K backdrop (`sky.webp`), the sun placed where it sits in the photo, ground-contact ambient occlusion, multisampled anti-aliasing and up to 2× pixel density. "Download 4K image" renders a 3840px still.
+**HD:** the walkthroughs and the visualizer run in HD mode (`createStage(canvas, { hd: true })`): it lights the house with a real HDR sky (`images/tex/sky.hdr`, Poly Haven "Kloofendal 48d Partly Cloudy", CC0) with a 4K backdrop (`sky.webp`), the sun placed where it sits in the photo, ground-contact ambient occlusion, multisampled anti-aliasing and up to 2× pixel density. "Download 4K image" renders a 3840px still.
 
 Colors are on-screen approximations of each manufacturer's published colors; keep the "confirm with physical samples" note.

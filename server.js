@@ -14,7 +14,8 @@ import busboy from "busboy";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
-const PUBLIC = ["index.html", "css", "js", "images"];
+const PAGES = ["index.html", "roofing.html", "siding.html", "windows.html", "gutters.html", "design.html", "estimate.html", "insurance.html", "work.html", "checklist.html"];
+const PUBLIC = [...PAGES, "css", "js", "images"];
 const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".json": "application/json", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
@@ -25,6 +26,7 @@ const TYPES = {
 function serveStatic(req, res) {
   let rel = decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, "");
   if (rel === "") rel = "index.html";
+  if (PAGES.includes(rel + ".html")) rel += ".html"; // /roofing → roofing.html
   const file = path.normalize(path.join(ROOT, rel));
   const top = rel.split("/")[0];
   if (!file.startsWith(ROOT + path.sep) || !PUBLIC.includes(top)) return notFound(res);
