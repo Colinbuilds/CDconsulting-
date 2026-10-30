@@ -75,6 +75,8 @@
     $("#buildField").value = a.build || "";
     $("#estimateField").value = a.estimate || "";
     $("#claimCheckField").value = a.claim || "";
+    $("#roofQuoteField").value = a.roofQuote || "";
+    if (a.address && !form.elements.address.value) form.elements.address.value = a.address;
     (a.interests || []).forEach(check);
     if (a.claim || (a.interests || []).includes("Storm / Insurance")) {
       const msgBox = form.elements.message;
@@ -83,6 +85,7 @@
     const items = [];
     if (a.build) items.push(`<li><b>Design build</b> — ${a.build.split(" | ")[0].replace("Build: ", "")}</li>`);
     if (a.render) items.push(`<li><b>Your rendered photo</b></li>`);
+    if (a.roofQuote) items.push(`<li><b>Roof quote</b> — ${a.roofQuote.split(" | ")[0]}</li>`);
     if (a.estimate) items.push(`<li><b>Ballpark</b> — ${a.estimate.split(" | ")[0]}</li>`);
     if (a.claim) items.push(`<li><b>Should-I-file check</b> — ${a.claim.split(" | ")[0]}</li>`);
     $("#attachedList").innerHTML = items.join("");

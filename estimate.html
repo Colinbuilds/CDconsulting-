@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Ballpark estimate | CD Consulting</title>
+  <title>Roof price & estimate | CD Consulting</title>
   <meta name="description" content="Switch on the roofing, siding, window, gutter and door work you're considering and get a realistic price range in seconds." />
   <meta name="theme-color" content="#0b0c0f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
@@ -16,13 +16,80 @@
   <script src="js/layout.js"></script>
 
   <main>
-<!-- ============ ESTIMATOR ============ -->
+<!-- ============ ROOF QUOTE ============ -->
+    <section class="section roofq" id="roof-quote" aria-labelledby="rq-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="label">Roof price by address</p>
+          <h1 id="rq-title">Your roof, <em>measured.</em></h1>
+          <p class="sec-sub">Type your address. I'll pull up your house from above, you confirm it's yours, and the roof is measured from the building outline on record. Then you'll see installed pricing for three shingle lines, tax included.</p>
+        </header>
+
+        <form class="rq-find" id="rqFind" novalidate>
+          <label class="field"><span>Street address, city, state</span>
+            <input id="rqAddr" name="rq_address" autocomplete="street-address" placeholder="123 Main St, Springfield, IL" />
+          </label>
+          <button class="btn btn-blue" id="rqGo" type="submit">Find my roof</button>
+        </form>
+        <p class="form-msg" id="rqMsg" role="status"></p>
+
+        <div class="rq-confirm" id="rqConfirm" hidden>
+          <div class="rq-photos">
+            <figure>
+              <div class="rq-map" id="rqMap">
+                <img id="rqImg" alt="Your house from above" width="640" height="420" />
+                <svg id="rqSvg" aria-hidden="true"></svg>
+                <p class="rq-map-err" id="rqMapErr" hidden>The aerial photo didn't load. Use the links to check your house.</p>
+              </div>
+              <figcaption id="rqCredit"></figcaption>
+            </figure>
+            <figure id="rqStreetFig" hidden>
+              <img id="rqStreet" alt="Your house from the street" width="640" height="400" />
+              <figcaption>Street View © Google</figcaption>
+            </figure>
+          </div>
+          <div class="rq-side">
+            <p class="label">Step 1 of 2</p>
+            <h2>Is this <em>your</em> house?</h2>
+            <p class="rq-found" id="rqFound"></p>
+            <p class="rq-noroof" id="rqNoRoof" hidden>I couldn't find a building outline at that spot. Tap your roof on the photo, or enter the size by hand.</p>
+            <div class="rq-yesno">
+              <button class="btn btn-blue btn-sm" id="rqYes" type="button">Yes, that's my roof</button>
+              <button class="btn btn-ghost btn-sm" id="rqNo" type="button">Not quite, let me tap it</button>
+              <button class="btn btn-ghost btn-sm" id="rqManualBtn" type="button">Enter size by hand</button>
+            </div>
+            <p class="rq-hint" id="rqTapHint" hidden>Tap the middle of your roof on the photo.</p>
+            <p class="rq-links">Double-check it on <a id="rqEarth" target="_blank" rel="noopener">Google Earth</a>, <a id="rqZillow" target="_blank" rel="noopener">Zillow</a> or <a id="rqSV" target="_blank" rel="noopener">Street View</a>.</p>
+          </div>
+        </div>
+
+        <div class="rq-quote" id="rqQuote" hidden>
+          <div class="rq-measure">
+            <p class="label">Step 2 of 2 · Measurement</p>
+            <div class="rq-rows">
+              <label class="rq-row"><span id="rqFootLabel">Footprint (sq ft)</span><input id="rqFoot" type="number" min="0" step="10" inputmode="numeric" /></label>
+              <div class="rq-row"><span id="rqPlanLabel">With overhang</span><b id="rqPlan">—</b></div>
+              <label class="rq-row"><span>Pitch <small id="rqPitchNote"></small></span><span class="rq-pitch"><select id="rqPitch"></select><i id="rqFactor"></i></span></label>
+              <div class="rq-row"><span>Roof surface</span><b id="rqArea">—</b></div>
+              <div class="rq-row rq-strong"><span id="rqWasteLabel">+ 8% waste</span><b id="rqSq">—</b></div>
+            </div>
+            <p class="fine" id="rqSource"></p>
+          </div>
+          <div class="rq-pricing">
+            <div class="rq-products" id="rqProducts"></div>
+            <div class="rq-total" id="rqTotal" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ESTIMATOR ============ -->
     <section class="section band estimator" id="estimate" aria-labelledby="est-title">
       <div class="wrap">
         <header class="sec-head">
-          <p class="label">Ballpark estimate</p>
-          <h1 id="est-title">Know the number <em>before</em> you call.</h1>
-          <p class="sec-sub">Switch on the work you're considering. You'll get a realistic range in seconds. It's not a quote, but it's enough to plan with.</p>
+          <p class="label">Everything else</p>
+          <h2 id="est-title">Siding, windows, gutters <em>&amp; more.</em></h2>
+          <p class="sec-sub">Switch on the other work you're considering. You'll get a realistic range in seconds. It's not a quote, but it's enough to plan with.</p>
         </header>
 
         <div class="est-layout">
@@ -65,5 +132,6 @@
   <script src="js/config.js"></script>
   <script src="js/main.js"></script>
   <script src="js/estimator.js"></script>
+  <script src="js/roofquote.js"></script>
 </body>
 </html>

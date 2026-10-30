@@ -17,6 +17,25 @@ window.SITE = {
 };
 
 /* --------------------------------------------------------------------------
+   ROOF QUOTE — the address-based roof price on the estimate page.
+   Roof area = measured footprint (+ overhang) × pitch factor, plus waste,
+   priced per square (100 sq ft). Prices are installed, before tax.
+   -------------------------------------------------------------------------- */
+window.ROOF_PRICING = {
+  taxRate: 0.07,          // TODO: your sales tax rate (0.07 = 7%)
+  taxLabel: "Sales tax",
+  waste: 0.08,            // 8% waste
+  overhangFt: 1,          // eave / rake overhang added around the measured footprint
+  defaultPitch: 7,        // most roofs are 6/12 to 9/12
+  pitches: [4, 5, 6, 7, 8, 9, 10, 12],
+  products: [
+    { id: "highlander", brand: "Malarkey", name: "Highlander", perSquare: 350, note: "Polymer-modified architectural shingle with Scotchgard algae protection." },
+    { id: "titan-xt", brand: "Tamko", name: "Titan XT", perSquare: 375, note: "Heavyweight architectural shingle rated for high winds." },
+    { id: "presidential", brand: "CertainTeed", name: "Presidential Shake", perSquare: 485, note: "Luxury triple-laminate shingle with a cedar-shake look." },
+  ],
+};
+
+/* --------------------------------------------------------------------------
    PAST WORK — add your projects here.
    Put photos in /images/projects/ and reference them by path.
    Leave `before`/`after` empty ("") to show a styled placeholder.
