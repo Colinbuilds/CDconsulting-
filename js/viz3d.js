@@ -388,8 +388,7 @@ $("#vzDownload").addEventListener("click", async () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
 $("#vzEstimate").addEventListener("click", () => {
-  document.dispatchEvent(new CustomEvent("cd:estimate-prefill", { detail: resolve(design) }));
-  window.CD.goTo("estimate");
+  window.CD.handoff("cd:estimate-prefill", resolve(design), "estimate");
 });
 $("#sendBuild").addEventListener("click", async () => {
   window.CD.attach("build", `Build: ${presetName || "Custom"} | ` + describe(design).join(" | "));

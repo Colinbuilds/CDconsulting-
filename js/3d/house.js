@@ -19,6 +19,8 @@ const GAR_RIDGE = GAR.eave + 11 * GAR.pitch;
 const PORCH = { x0: -4, x1: 14.5, z0: 14, z1: 21.5, floor: 1.5, top: 11.2, pitch: 3 / 12 };
 
 const mainRoofY = (z) => RIDGE_Y - Math.abs(z) * PITCH;
+// the window that gets a full replacement in the windows process (2nd floor, above the porch roof)
+const FOCUS_WIN = { wall: "mainFront", index: 0 };
 
 /* window openings in world terms, per wall: [left, bottom, width, height, cols] in wall-local feet */
 const OPEN = {
@@ -268,17 +270,19 @@ export function buildHouse({ mode = "viz" } = {}) {
 
   /* ---------- gutters ---------- */
   const gutG = new THREE.Group(); root.add(gutG);
+  const gutRuns = [], gutSpouts = [];
   const gutter = (x0, x1, z, y, alongZ = false) => {
     const g = new THREE.Mesh(new THREE.BoxGeometry(alongZ ? 0.45 : x1 - x0, 0.45, alongZ ? x1 - x0 : 0.45), M.gutter);
     g.position.set(alongZ ? z : (x0 + x1) / 2, y - 0.45, alongZ ? (x0 + x1) / 2 : z);
     g.castShadow = true; gutG.add(g);
+    gutRuns.push({ mesh: g, alongZ, x0, x1, z, y, home: g.position.clone() });
   };
   gutter(-19, -17, 15.85, eY); gutter(-3, 19, 15.85, eY); gutter(-19, 19, -15.85, eY);
   gutter(15.3, 19, -17.35, bY, true); gutter(15.3, 19, -2.65, bY, true);
   gutter(18, 41, GAR.z1 + 1.55, gY); gutter(18, 41, GAR.z0 - 1.55, gY);
   const pY = PORCH.top - (PORCH.z1 - PORCH.z0) * PORCH.pitch;
   gutter(PORCH.x0, PORCH.x1, PORCH.z1 + 0.3, pY);
-  const spout = (x, z, y) => box(0.32, y, 0.32, M.gutter, x, y / 2, z, gutG);
+  const spout = (x, z, y) => { const m = box(0.32, y, 0.32, M.gutter, x, y / 2, z, gutG); gutSpouts.push({ mesh: m, h: y, home: m.position.clone() }); return m; };
   spout(18.6, 15.2, eY - 0.5); spout(40.8, 11.6, gY - 0.5); spout(-17.3, 19.2, bY - 0.5); spout(-18.6, -15.4, eY - 0.5);
 
   /* ---------- roofs ---------- */
@@ -445,6 +449,55 @@ export function buildHouse({ mode = "viz" } = {}) {
   const winG = new THREE.Group(); root.add(winG);
   const grids = { colonial: [], prairie: [], craftsman: [] };
   const glows = [];
+
+  // One window gets a full replacement in the windows process: old unit out, sill pan,
+  // new unit in, flashing tape, trim back on. Its parts live in their own groups.
+  const focus = { casing: new THREE.Group(), old: new THREE.Group(), unit: new THREE.Group(), pan: new THREE.Group(), tape: new THREE.Group(),
+    grids: { colonial: [], prairie: [], craftsman: [] }, frame: new THREE.MeshStandardMaterial({ color: "#16171a", roughness: 0.45 }), n: null };
+  Object.values(focus).forEach((g) => g && g.isGroup && root.add(g));
+  const oldFrame = new THREE.MeshStandardMaterial({ color: "#f2f2ee", roughness: 0.5 });
+  function buildFocusWindow(w, toWorld, q, x, y, ww, hh, cols) {
+    focus.n = w.n.clone();
+    const part = (g, bw, bh, bd, mat, lx, ly, d) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat);
+      m.position.copy(toWorld(lx, ly, d)); m.quaternion.copy(q); m.castShadow = m.receiveShadow = true; g.add(m); return m;
+    };
+    part(focus.casing, ww + 0.9, 0.45, 0.16, M.trim, x + ww / 2, y + hh + 0.22, 0.14);
+    part(focus.casing, ww + 1.1, 0.22, 0.4, M.trim, x + ww / 2, y - 0.1, 0.22);
+    part(focus.casing, 0.45, hh, 0.16, M.trim, x - 0.22, y + hh / 2, 0.14);
+    part(focus.casing, 0.45, hh, 0.16, M.trim, x + ww + 0.22, y + hh / 2, 0.14);
+    const unit = (g, frameMat, gridSets) => {
+      part(g, ww, hh, 0.05, M.glass, x + ww / 2, y + hh / 2, -0.15);
+      if (g === focus.unit) glows.push(part(g, ww - 0.2, hh - 0.2, 0.02, M.glow, x + ww / 2, y + hh / 2, -0.11));
+      part(g, ww, 0.22, 0.2, frameMat, x + ww / 2, y + 0.11, -0.05);
+      part(g, ww, 0.22, 0.2, frameMat, x + ww / 2, y + hh - 0.11, -0.05);
+      part(g, 0.22, hh, 0.2, frameMat, x + 0.11, y + hh / 2, -0.05);
+      part(g, 0.22, hh, 0.2, frameMat, x + ww - 0.11, y + hh / 2, -0.05);
+      part(g, ww - 0.3, 0.16, 0.16, frameMat, x + ww / 2, y + hh * 0.5, -0.04);
+      const gx = (kind, lx, ly, gw, gh) => { const m = part(g, gw, gh, 0.06, frameMat, lx, ly, -0.08); if (gridSets) gridSets[kind].push(m); return m; };
+      for (const fy of [0.25, 0.75]) { gx("colonial", x + ww / 2, y + hh * fy, 0.07, hh * 0.5 - 0.2); gx("colonial", x + ww / 2, y + hh * fy, ww - 0.3, 0.07); }
+      if (gridSets) {
+        for (const dx of [0.3, ww - 0.3]) gx("prairie", x + dx, y + hh * 0.75, 0.07, hh * 0.5 - 0.2);
+        gx("prairie", x + ww / 2, y + hh - 0.4, ww - 0.3, 0.07);
+        gx("prairie", x + ww / 2, y + hh * 0.5 + 0.3, ww - 0.3, 0.07);
+        for (const fx of [1 / 3, 2 / 3]) gx("craftsman", x + ww * fx, y + hh * 0.75, 0.07, hh * 0.5 - 0.2);
+      }
+    };
+    unit(focus.old, oldFrame, null);
+    unit(focus.unit, focus.frame, focus.grids);
+    // sill pan: bent metal tray at the bottom of the rough opening
+    part(focus.pan, ww + 0.3, 0.06, 0.55, galvPan, x + ww / 2, y + 0.03, -0.02);
+    part(focus.pan, 0.06, 0.5, 0.5, galvPan, x - 0.12, y + 0.25, -0.02);
+    part(focus.pan, 0.06, 0.5, 0.5, galvPan, x + ww + 0.12, y + 0.25, -0.02);
+    // flashing tape: sill, jambs, head (shingle-lapped)
+    const t = 0.7;
+    part(focus.tape, ww + 2 * t, t, 0.01, tapeFocus, x + ww / 2, y - t / 2, 0.075);
+    part(focus.tape, t, hh + t, 0.01, tapeFocus, x - t / 2, y + hh / 2 - t / 2, 0.08);
+    part(focus.tape, t, hh + t, 0.01, tapeFocus, x + ww + t / 2, y + hh / 2 - t / 2, 0.08);
+    part(focus.tape, ww + 2 * t, t, 0.01, tapeFocus, x + ww / 2, y + hh + t / 2, 0.085);
+  }
+  const galvPan = new THREE.MeshStandardMaterial({ color: "#b7bcc2", metalness: 0.75, roughness: 0.32 });
+  const tapeFocus = new THREE.MeshStandardMaterial({ color: "#39414f", roughness: 0.5 });
   for (const w of W) {
     const toWorld = (lx, ly, d) => w.o.clone().addScaledVector(w.u, lx).addScaledVector(UP, ly).addScaledVector(w.n, d);
     const q = new THREE.Quaternion().setFromRotationMatrix(basis(w.u, w.n));
@@ -455,7 +508,8 @@ export function buildHouse({ mode = "viz" } = {}) {
       winG.add(m);
       return m;
     };
-    for (const [x, y, ww, hh, cols] of w.win || []) {
+    for (const [wi, [x, y, ww, hh, cols]] of (w.win || []).entries()) {
+      if (build && w.id === FOCUS_WIN.wall && wi === FOCUS_WIN.index) { buildFocusWindow(w, toWorld, q, x, y, ww, hh, cols); continue; }
       // casing
       part(ww + 0.9, 0.45, 0.16, M.trim, x + ww / 2, y + hh + 0.22, 0.14);
       part(ww + 1.1, 0.22, 0.4, M.trim, x + ww / 2, y - 0.1, 0.22); // sill
@@ -546,7 +600,8 @@ export function buildHouse({ mode = "viz" } = {}) {
       m.position.copy(w.o).addScaledVector(w.u, lx).addScaledVector(UP, ly).addScaledVector(w.n, 0.055); m.quaternion.copy(q);
       SYS.tape.add(m);
     };
-    for (const [x, y, ww, hh] of w.win || []) {
+    for (const [wi, [x, y, ww, hh]] of (w.win || []).entries()) {
+      if (build && w.id === FOCUS_WIN.wall && wi === FOCUS_WIN.index) continue;
       const t = 0.75;
       put(x + ww / 2, y - t / 2, ww + 2 * t, t);         // sill
       put(x - t / 2, y + hh / 2, t, hh);                  // jambs
@@ -595,6 +650,7 @@ export function buildHouse({ mode = "viz" } = {}) {
     if (M.garage) M.garage.color.set(trim.hex);
     M.frame.color.set(windows.hex);
     for (const k of Object.keys(grids)) grids[k].forEach((m) => (m.visible = k === windows.grid));
+    if (!focusOverride) setFocus(windows.hex, windows.grid);
     M.door.color.set(door.hex);
     for (const [k, g] of Object.entries(M.doorStyles)) g.visible = k === (door.style || "craftsman");
     M.gutter.color.set(gutters.hex);
@@ -603,6 +659,15 @@ export function buildHouse({ mode = "viz" } = {}) {
     if (accents.hex) M.stone.color.set(accents.hex);
     piers.forEach((p) => (p.material = accents.hex ? M.stone : M.trim));
   };
+
+  let focusOverride = false;
+  function setFocus(hex, grid) {
+    focus.frame.color.set(hex);
+    for (const k of Object.keys(focus.grids)) focus.grids[k].forEach((m) => (m.visible = k === grid));
+  }
+  // windows process: the replacement window shows the new style while the rest are still old
+  api.setFocusStyle = (hex, grid) => { focusOverride = true; setFocus(hex, grid); };
+  focus.old.visible = focus.pan.visible = focus.tape.visible = false;
 
   // finished house shows only what's visible on a real finished roof
   const showFinished = () => {
@@ -666,6 +731,7 @@ export function buildHouse({ mode = "viz" } = {}) {
     const roofInst = mkInst(roofDeb, roofDebMat);
     const wallInst = mkInst(wallDeb, oldSidingMat);
 
+    const hideAll = (im, list) => { for (let i = 0; i < list.length; i++) im.setMatrixAt(i, tmpM.makeScale(0, 0, 0)); im.instanceMatrix.needsUpdate = true; };
     const fall = (im, list, t0, t1, life, P, cutAt) => {
       for (let i = 0; i < list.length; i++) {
         const d = list[i];
@@ -684,25 +750,78 @@ export function buildHouse({ mode = "viz" } = {}) {
       im.instanceMatrix.needsUpdate = true;
     };
 
+    // a rotten sheet of decking found during tear-off, cut out and replaced
+    const front = planes.find((p) => p.id === "mainFront");
+    const sheet = (mat, inset) => {
+      const at = (x, sv) => front.p0.clone().addScaledVector(front.ed, x).addScaledVector(front.ud, sv).addScaledVector(front.n, inset);
+      const pts = [at(22, 4), at(30, 4), at(30, 8), at(22, 8)];
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pts.flatMap((v) => [v.x, v.y, v.z]), 3));
+      g.setAttribute("uv", new THREE.Float32BufferAttribute([22, 4, 30, 4, 30, 8, 22, 8], 2));
+      g.setIndex([0, 1, 2, 0, 2, 3]); g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat); m.receiveShadow = true; root.add(m); return m;
+    };
+    const rotMat = osbMat.clone(); rotMat.color.set("#5b4630");
+    const freshMat = osbMat.clone(); freshMat.color.set("#fff4dc");
+    const rotSheet = sheet(rotMat, 0.012), freshSheet = sheet(freshMat, 0.014);
+    rotSheet.visible = freshSheet.visible = false;
+
+    // siding starter strip along the base of every wall
+    const wallStarter = new THREE.Group(); root.add(wallStarter);
+    const starterMetal = new THREE.MeshStandardMaterial({ color: "#4a4f56", metalness: 0.5, roughness: 0.5 });
+    for (const w of W) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w.w, 0.18, 0.04), starterMetal);
+      m.quaternion.setFromRotationMatrix(basis(w.u, w.n));
+      m.position.copy(w.o).addScaledVector(w.u, w.w / 2).addScaledVector(UP, 0.12).addScaledVector(w.n, 0.065);
+      wallStarter.add(m);
+    }
+    wallStarter.visible = false;
+
+    // old (white) gutters that come down, hangers, and leaf guards for the gutters process
+    const oldGut = new THREE.Group(); root.add(oldGut);
+    const oldGutMat = new THREE.MeshStandardMaterial({ color: "#eeede8", roughness: 0.45, metalness: 0.15 });
+    [...gutRuns.map((r) => r.mesh), ...gutSpouts.map((s) => s.mesh)].forEach((m) => {
+      const c = new THREE.Mesh(m.geometry, oldGutMat); c.position.copy(m.position); c.castShadow = true; oldGut.add(c);
+    });
+    oldGut.visible = false;
+    const hangers = new THREE.Group(), guards = new THREE.Group(); root.add(hangers, guards);
+    const hangerMat = new THREE.MeshStandardMaterial({ color: "#c9cdd2", metalness: 0.7, roughness: 0.3 });
+    const guardMat = new THREE.MeshStandardMaterial({ color: "#2b2e33", metalness: 0.4, roughness: 0.6 });
+    for (const r of gutRuns) {
+      const len = r.x1 - r.x0;
+      for (let t = 1; t < len; t += 2) {
+        const h = new THREE.Mesh(new THREE.BoxGeometry(r.alongZ ? 0.5 : 0.06, 0.05, r.alongZ ? 0.06 : 0.5), hangerMat);
+        h.position.set(r.alongZ ? r.z : r.x0 + t, r.y - 0.25, r.alongZ ? r.x0 + t : r.z);
+        hangers.add(h);
+      }
+      const gd = new THREE.Mesh(new THREE.BoxGeometry(r.alongZ ? 0.5 : len, 0.03, r.alongZ ? len : 0.5), guardMat);
+      gd.position.copy(r.home).add(V(0, 0.24, 0));
+      guards.add(gd);
+    }
+    hangers.visible = guards.visible = false;
+
     const yTop = RIDGE_Y + 0.5;
     api.setBuild = (T, P) => {
-      const seg = (a, b) => Math.min(1, Math.max(0, (P - a) / (b - a)));
+      const clamp01 = (v) => Math.min(1, Math.max(0, v));
+      // any step a page doesn't animate counts as already finished
+      const seg = (k) => (T[k] ? clamp01((P - T[k][0]) / (T[k][1] - T[k][0])) : 1);
+      const after = (k) => (T[k] ? P >= T[k][0] : true);
       const ease = (t) => 1 - Math.pow(1 - t, 3);
 
       // roof: old tear-off ridge → eave (keep below cut)
-      const off = seg(...T.roofOff);
+      const off = seg("roofOff");
       planes.forEach((pl, i) => {
         const pd = pl.ud.dot(pl.p0);
         setPlane(roofLayers.old[i].material, pl.ud.clone().negate(), pd + pl.S * (1 - off) + (off === 0 ? 1 : 0));
         roofLayers.old[i].visible = off < 1;
-        const un = seg(...T.under);
+        const un = seg("under");
         setPlane(roofLayers.under[i].material, pl.ud.clone().negate(), pd + pl.S * un - (un === 0 ? 1 : 0));
         roofLayers.under[i].visible = un > 0;
       });
-      fall(roofInst, roofDeb, T.roofOff[0], T.roofOff[1], 0.05, P, (d) => d.at);
+      if (T.roofOff) fall(roofInst, roofDeb, T.roofOff[0], T.roofOff[1], 0.05, P, (d) => d.at); else hideAll(roofInst, roofDeb);
 
       // new shingles: eave → ridge, racked
-      const on = seg(...T.roofOn);
+      const on = seg("roofOn");
       for (let i = 0; i < strips.length; i++) {
         const st = strips[i];
         const start = (st.c / st.courses) * 0.86 + ((st.c % 4) * 0.004) + st.x * 0.03;
@@ -716,7 +835,6 @@ export function buildHouse({ mode = "viz" } = {}) {
       }
       stripMesh.instanceMatrix.needsUpdate = true;
       capG.visible = on >= 1;
-      const after = (k) => P >= T[k][0];
       SYS.drip.visible = after("drip");
       SYS.ice.visible = after("ice");
       SYS.valley.visible = after("valley");
@@ -726,22 +844,77 @@ export function buildHouse({ mode = "viz" } = {}) {
       SYS.ridgeVent.visible = after("ridgeVent");
       capMain.visible = after("ridgeCap");
       SYS.tape.visible = after("tape");
-      SYS.soffit.visible = P < T.roofOff[0] || after("finish");
+      SYS.soffit.visible = !T.roofOff || P < T.roofOff[0] || after("finish");
+
+      // rotten decking: visible once the old roof is off, then swapped for a fresh sheet
+      if (T.deckFix) {
+        rotSheet.visible = off > 0.6 && P < (T.deckFix[0] + T.deckFix[1]) / 2;
+        const f = seg("deckFix");
+        freshSheet.visible = f > 0.5;
+        freshSheet.position.copy(front.n).multiplyScalar((1 - ease(clamp01((f - 0.5) * 2))) * 1.2);
+      } else rotSheet.visible = freshSheet.visible = false;
 
       // walls: old siding top → bottom
-      const so = seg(...T.sidingOff);
+      const so = seg("sidingOff");
       const cut = yTop - so * (yTop + 0.5);
       wallLayers.old.forEach((m) => { setPlane(m.material, V(0, -1, 0), cut); m.visible = so < 1; });
-      fall(wallInst, wallDeb, T.sidingOff[0], T.sidingOff[1], 0.06, P, (d) => 1 - d.y / yTop);
-      const wr = seg(...T.wrap);
+      if (T.sidingOff) fall(wallInst, wallDeb, T.sidingOff[0], T.sidingOff[1], 0.06, P, (d) => 1 - d.y / yTop); else hideAll(wallInst, wallDeb);
+      const wr = seg("wrap");
       wallLayers.wrap.forEach((m) => { setPlane(m.material, V(0, -1, 0), wr * yTop - (wr === 0 ? 1 : 0)); m.visible = wr > 0; });
-      const sn = seg(...T.sidingOn);
+      wallStarter.visible = !!T.wallStarter && after("wallStarter");
+      const sn = seg("sidingOn");
       const ny = Math.floor((sn * yTop) / (7 / 12)) * (7 / 12);
       Object.values(newSidingMats).forEach((m) => setPlane(m, V(0, -1, 0), sn >= 1 ? 999 : ny - (sn === 0 ? 1 : 0)));
 
-      // trim & gutters: old ones off during tear-off, new ones on at the end
-      const gOn = P < T.roofOff[0] || P > T.finish[0];
-      gutG.visible = gOn;
+      // gutters
+      if (T.gutterOff) {
+        // old white gutters drop away, hangers go up, new runs extend, downspouts drop, guards go on
+        const go = seg("gutterOff");
+        oldGut.visible = go < 1;
+        oldGut.position.set(0, -ease(go) * 18, 0);
+        oldGut.rotation.z = go * 0.04;
+        hangers.visible = after("hangers");
+        const gn = seg("gutterOn");
+        gutG.visible = true;
+        gutRuns.forEach((r, i) => {
+          const a = clamp01(gn * gutRuns.length - i);
+          r.mesh.visible = a > 0;
+          const len = r.x1 - r.x0;
+          if (r.alongZ) { r.mesh.scale.set(1, 1, Math.max(a, 0.001)); r.mesh.position.set(r.home.x, r.home.y, r.x0 + (len * a) / 2); }
+          else { r.mesh.scale.set(Math.max(a, 0.001), 1, 1); r.mesh.position.set(r.x0 + (len * a) / 2, r.home.y, r.home.z); }
+        });
+        const sp = seg("spouts");
+        gutSpouts.forEach((s) => {
+          s.mesh.visible = sp > 0;
+          s.mesh.scale.set(1, Math.max(sp, 0.001), 1);
+          s.mesh.position.set(s.home.x, s.h - (s.h * sp) / 2, s.home.z);
+        });
+        guards.visible = after("guards");
+      } else {
+        oldGut.visible = hangers.visible = guards.visible = false;
+        // whole-house job: gutters come off for the tear-off and go back on at the end
+        gutG.visible = !T.roofOff || P < T.roofOff[0] || after("finish");
+      }
+
+      // windows: the focus window is pulled, the opening flashed, a new unit set and trimmed
+      if (T.winOut) {
+        const n = focus.n;
+        const o = seg("winOut");
+        focus.old.visible = o < 1;
+        focus.old.position.copy(n).multiplyScalar(ease(o) * 4).add(V(0, -ease(o) * 1.5, 0));
+        focus.pan.visible = after("sillPan");
+        const i = seg("winIn");
+        focus.unit.visible = i > 0;
+        focus.unit.position.copy(n).multiplyScalar((1 - ease(i)) * 4);
+        focus.tape.visible = after("winTape");
+        const t = seg("winTrim");
+        focus.casing.visible = P < T.winOut[0] || t > 0;
+        focus.casing.position.copy(n).multiplyScalar((1 - ease(t)) * 2.5);
+      } else {
+        focus.old.visible = focus.pan.visible = focus.tape.visible = false;
+        focus.unit.visible = focus.casing.visible = true;
+        focus.unit.position.set(0, 0, 0); focus.casing.position.set(0, 0, 0);
+      }
     };
   }
 

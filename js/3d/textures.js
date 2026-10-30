@@ -40,19 +40,19 @@ const memo = (key, fn) => { if (!cache.has(key)) cache.set(key, fn()); return ca
 /* ---------- photo textures (CC0, Poly Haven) ---------- */
 const loader = new THREE.TextureLoader();
 const listeners = new Set();
-let pending = 0;
+let pending = 0, total = 0;
 /* subscribe to "a texture finished loading" so each 3D view can re-render */
-export const onTextureLoad = (fn) => { listeners.add(fn); if (pending === 0) fn(0); };
+export const onTextureLoad = (fn) => { listeners.add(fn); if (pending === 0) fn(0, total); };
 /* count any other async asset (the HDR sky) toward "everything loaded" */
 export function trackLoad() {
-  pending++;
+  pending++; total++;
   let once = false;
-  return () => { if (once) return; once = true; pending--; listeners.forEach((f) => f(pending)); };
+  return () => { if (once) return; once = true; pending--; listeners.forEach((f) => f(pending, total)); };
 }
 export function photo(name, { srgb = true, repeat = 1, repeatY } = {}) {
   return memo(`photo:${name}:${srgb}:${repeat}:${repeatY}`, () => {
-    pending++;
-    const done = () => { pending--; listeners.forEach((f) => f(pending)); };
+    pending++; total++;
+    const done = () => { pending--; listeners.forEach((f) => f(pending, total)); };
     const t = loader.load(`images/tex/${name}.webp`, done, undefined, done);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;

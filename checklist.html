@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Homeowner checklist | CD Consulting</title>
+  <meta name="description" content="Before, during and after a roofing, siding, window or gutter job: how to keep your home and belongings from getting damaged, and keep the new work protected." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="checklist">
+  <script src="js/layout.js"></script>
+
+  <main>
+    <!-- ============ CHECKLIST ============ -->
+    <section class="section checklist-page" aria-labelledby="cl-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="label">Homeowner checklist</p>
+          <h1 id="cl-title">Nothing broken, <em>nothing missed.</em></h1>
+          <p class="sec-sub">What to do before the crew arrives so cars, walls, plants and belongings stay safe, and how to keep the new work protected afterward. Your ticks are saved on this device.</p>
+        </header>
+        <div class="cl-bar">
+          <div class="work-filter" id="clFilter">
+            <button class="chip" data-f="all">Everything</button>
+            <button class="chip" data-f="roofing">Roofing</button>
+            <button class="chip" data-f="siding">Siding</button>
+            <button class="chip" data-f="windows">Windows</button>
+            <button class="chip" data-f="gutters">Gutters</button>
+          </div>
+          <div class="cl-progress"><span id="clCount">0 done</span><i><b id="clBar"></b></i></div>
+          <div class="cl-actions">
+            <button class="btn btn-ghost btn-sm" id="clPrint" type="button">Print</button>
+            <button class="btn btn-ghost btn-sm" id="clReset" type="button">Clear ticks</button>
+          </div>
+        </div>
+        <div class="cl-lists" id="checklist"></div>
+        <div class="cl-cta">
+          <h2>Questions about <em>your</em> project?</h2>
+          <a href="index.html#contact" class="btn btn-blue">Ask me</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/checklist.js"></script>
+</body>
+</html>

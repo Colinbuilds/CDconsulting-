@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Insurance claims, in plain English | CD Consulting</title>
+  <meta name="description" content="When a roof or exterior insurance claim makes sense, how the process works start to finish, and how I help you get it paid for and built." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="insurance">
+  <script src="js/layout.js"></script>
+
+  <main>
+<!-- ============ INSURANCE CLAIMS ============ -->
+    <section class="section tone-light insurance" id="insurance" aria-labelledby="ins-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="label">Storm damage &amp; insurance</p>
+          <h1 id="ins-title">Claims, <em>in plain English.</em></h1>
+          <p class="sec-sub">How roof and exterior claims actually work, when filing makes sense, and where I fit in. No storm-chaser games.</p>
+        </header>
+
+        <div class="ins-when">
+          <article class="ins-col">
+            <h3><span class="ins-dot ok"></span>Usually worth a claim</h3>
+            <ul>
+              <li><b>Hail damage.</b> Bruised or cracked shingles, dents in gutters, vents, downspouts and AC fins. Dented soft metals are often the first proof hail hit your property.</li>
+              <li><b>Wind damage.</b> Missing, creased or lifted shingles, torn ridge cap, siding blown off.</li>
+              <li><b>A fallen tree or limb</b> that damaged the roof, siding, gutters or windows.</li>
+              <li><b>A sudden leak</b> from storm damage that's now staining ceilings or walls.</li>
+              <li><b>Damage well above your deductible</b>, reported within your policy's deadline. Many give you a year or less.</li>
+            </ul>
+          </article>
+          <article class="ins-col">
+            <h3><span class="ins-dot no"></span>Think twice, or skip it</h3>
+            <ul>
+              <li><b>Age and wear.</b> Curling, granule loss from age and a roof at the end of its life are maintenance, not covered damage.</li>
+              <li><b>Damage close to your deductible.</b> A $2,400 repair on a $2,000 deductible pays little and still goes on your record.</li>
+              <li><b>Small repairs</b> like a few blown-off shingles. Paying out of pocket protects your claims history.</li>
+              <li><b>Pre-existing or neglected issues</b> such as old leaks, clogged gutters or failed flashing.</li>
+              <li><b>Several recent claims.</b> They can raise premiums or affect renewal. Ask your agent.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="ins-check" id="insCheck">
+          <div class="ins-check-head">
+            <h3>Should I file?</h3>
+            <p>Rough numbers in, a straight answer out. Your adjuster and policy make the real call.</p>
+          </div>
+          <div class="ins-check-body">
+            <form class="ins-inputs" id="insForm" onsubmit="return false">
+              <label class="field"><span>What caused it?</span>
+                <select id="insCause">
+                  <option value="hail">Hail</option>
+                  <option value="wind">Wind</option>
+                  <option value="tree">Fallen tree / limb</option>
+                  <option value="leak">Sudden storm leak</option>
+                  <option value="age">Age / normal wear</option>
+                </select>
+              </label>
+              <label class="field"><span>Estimated repair or replacement ($)</span>
+                <input id="insCost" type="number" min="0" step="500" value="18000" inputmode="numeric" />
+                <button type="button" class="ins-link" id="insUseEstimate">Use my ballpark</button>
+              </label>
+              <label class="field"><span>Deductible type</span>
+                <select id="insDedType">
+                  <option value="flat">Flat dollar amount</option>
+                  <option value="pct">Percent of dwelling coverage</option>
+                </select>
+              </label>
+              <label class="field" id="insFlatWrap"><span>Deductible ($)</span>
+                <input id="insDed" type="number" min="0" step="250" value="1500" inputmode="numeric" />
+              </label>
+              <label class="field" id="insPctWrap" hidden><span>Percent · dwelling coverage</span>
+                <span class="ins-pair">
+                  <select id="insPct"><option value="0.01">1%</option><option value="0.02" selected>2%</option><option value="0.05">5%</option></select>
+                  <input id="insCovA" type="number" min="0" step="10000" value="350000" inputmode="numeric" aria-label="Dwelling coverage in dollars" />
+                </span>
+              </label>
+              <label class="field"><span>Roof age (years)</span>
+                <input id="insAge" type="number" min="0" max="60" value="12" inputmode="numeric" />
+              </label>
+              <label class="field"><span>Policy pays</span>
+                <select id="insPolicy">
+                  <option value="rcv">Replacement cost (RCV)</option>
+                  <option value="acv">Actual cash value (ACV)</option>
+                  <option value="unsure">Not sure</option>
+                </select>
+              </label>
+              <label class="field"><span>Claims in the last 5 years</span>
+                <select id="insPrior"><option value="0">None</option><option value="1">One</option><option value="2">Two or more</option></select>
+              </label>
+            </form>
+            <div class="ins-result" id="insResult" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="ins-flow">
+          <h3 class="sub-title">How a claim goes, start to finish</h3>
+          <ol class="ins-steps">
+            <li><span>01</span><div><h4>Stay safe, document, protect</h4><p>Note the storm date and take photos from the ground. Tarp or move belongings to stop further damage, and keep the receipts. Reasonable emergency repairs are usually reimbursable.</p><p class="ins-me">I'll tarp it and photograph everything.</p></div></li>
+            <li><span>02</span><div><h4>Free inspection before you file</h4><p>A professional checks the roof, gutters, soft metals, siding and windows, and tells you honestly whether it's storm damage above your deductible.</p><p class="ins-me">A photo report and a straight answer, even if it's "don't file."</p></div></li>
+            <li><span>03</span><div><h4>You file the claim</h4><p>Call your insurer or use their app. Write down your claim number, adjuster and any deadlines.</p><p class="ins-me">I'll walk you through what to say and send.</p></div></li>
+            <li><span>04</span><div><h4>Adjuster inspection</h4><p>The insurer sends an adjuster. Having your contractor there makes sure nothing is missed.</p><p class="ins-me">With your OK, I meet the adjuster on the roof.</p></div></li>
+            <li><span>05</span><div><h4>Review the estimate</h4><p>Compare the adjuster's scope line by line. Missed items are documented and submitted as a supplement. If you still disagree: re-inspection, your policy's appraisal clause, or a licensed public adjuster.</p><p class="ins-me">Line-by-line comparison and supplement documentation.</p></div></li>
+            <li><span>06</span><div><h4>First check arrives</h4><p>On an RCV policy, usually the actual cash value minus your deductible. Your mortgage company may need to endorse it.</p></div></li>
+            <li><span>07</span><div><h4>Choose materials and build</h4><p>Pick products and colors, schedule the crew, get it done right. Upgrades beyond restoring the damage are your choice and your cost.</p><p class="ins-me">Design, ordering and crew management, start to finish.</p></div></li>
+            <li><span>08</span><div><h4>Close it out</h4><p>The final invoice and completion photos release the held-back depreciation. You pay your deductible, the same as any repair.</p><p class="ins-me">Final invoice, photos and paperwork.</p></div></li>
+          </ol>
+        </div>
+
+        <div class="ins-terms">
+          <h3 class="sub-title">Words on your paperwork</h3>
+          <div class="accordion">
+            <details><summary>Deductible</summary><p>What you pay before insurance pays. Wind/hail deductibles are often a <b>percentage</b> of your dwelling coverage: 2% of $350,000 is $7,000.</p></details>
+            <details><summary>RCV · replacement cost value</summary><p>Pays to replace with new materials. The first check usually holds back depreciation; you get it once the work is finished and invoiced.</p></details>
+            <details><summary>ACV · actual cash value</summary><p>Pays the depreciated value of your old roof. On an older roof that can be a fraction of the replacement cost.</p></details>
+            <details><summary>Recoverable depreciation</summary><p>The amount held back on an RCV policy. It's your money, but you have to finish the job and submit the final invoice, usually within a set deadline.</p></details>
+            <details><summary>Scope of loss</summary><p>The adjuster's line-item estimate of what's damaged and what it pays for. Read every line.</p></details>
+            <details><summary>Supplement</summary><p>A request to add items the original estimate missed, like drip edge, ice &amp; water shield, starter strip or code-required work, backed by photos and measurements.</p></details>
+            <details><summary>Code upgrade · ordinance or law</summary><p>Optional coverage that pays for work current building code requires, even if your old roof didn't have it.</p></details>
+            <details><summary>Two-party check</summary><p>If you have a mortgage, checks are often made out to you and your lender, who has to endorse them before funds are released.</p></details>
+          </div>
+        </div>
+
+        <div class="ins-role">
+          <article>
+            <h3>What I do for you</h3>
+            <ul>
+              <li>Free storm inspection with a photo report</li>
+              <li>An honest file-or-don't recommendation</li>
+              <li>Meet your adjuster on site</li>
+              <li>A detailed line-item estimate for your claim</li>
+              <li>Supplement documentation for missed and code-required items</li>
+              <li>Manage the build and the paperwork to close the claim</li>
+            </ul>
+          </article>
+          <article>
+            <h3>What I won't do</h3>
+            <ul>
+              <li>Waive, absorb or "cover" your deductible. It's illegal in many states and can void a claim.</li>
+              <li>Negotiate your settlement. In most states only licensed public adjusters or attorneys can.</li>
+              <li>Ask you to sign over your insurance benefits on the spot.</li>
+              <li>Inflate damage or bill for work that wasn't done.</li>
+            </ul>
+          </article>
+          <article>
+            <h3>Storm-chaser red flags</h3>
+            <ul>
+              <li>Door-knockers right after a storm with out-of-area plates</li>
+              <li>"Free roof" or "we'll cover your deductible"</li>
+              <li>Pressure to sign before an inspection or adjuster visit</li>
+              <li>Large cash deposits up front</li>
+              <li>No local address, license or references</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="ins-cta">
+          <div>
+            <h3>Had a storm? <em>Call me before you file.</em></h3>
+            <p>I'll inspect, tell you straight whether it's worth a claim, and if it is, I'll be with you from the adjuster visit to the final paperwork.</p>
+          </div>
+          <button class="btn btn-blue" id="insBook">Book a storm inspection</button>
+        </div>
+        <p class="fine">General information, not legal or insurance advice. Coverage depends on your policy, and claim rules differ by state. Read your policy and talk with your agent.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/insurance.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Past projects | CD Consulting</title>
+  <meta name="description" content="Roofing, siding, window and full exterior projects." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="work">
+  <script src="js/layout.js"></script>
+
+  <main>
+<!-- ============ WORK ============ -->
+    <section class="section band work" id="work" aria-labelledby="work-title">
+      <div class="wrap">
+        <header class="sec-head row">
+          <div>
+            <p class="label">Selected work</p>
+            <h1 id="work-title">Past <em>projects</em></h1>
+          </div>
+          <div class="work-filter" id="workFilter">
+            <button class="chip is-on" data-f="all">All</button>
+            <button class="chip" data-f="roofing">Roofing</button>
+            <button class="chip" data-f="siding">Siding</button>
+            <button class="chip" data-f="windows">Windows</button>
+            <button class="chip" data-f="additions">Additions</button>
+            <button class="chip" data-f="exterior">Full exterior</button>
+          </div>
+        </header>
+        <div class="work-grid" id="workGrid"></div>
+      </div>
+    </section>
+
+    <!-- project modal -->
+    <dialog class="modal" id="projectModal">
+    <div class="modal-inner">
+      <div class="panel-head"><span id="modalId">Project</span><button class="modal-x" aria-label="Close">✕</button></div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+    </dialog>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

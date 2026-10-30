@@ -14,9 +14,9 @@ import { setAnisotropy, trackLoad } from "./textures.js";
 // the ambient-occlusion pass, whose override material would turn leaf cards into squares.
 export const NO_AO = 1;
 
-export function createStage(canvas, { mobile = false, hd = false } = {}) {
+export function createStage(canvas, { mobile = false, hd = false, dpr } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !hd, powerPreference: "high-performance" });
-  const maxDpr = hd ? (mobile ? 1.75 : 2) : (mobile ? 1.5 : 1.75);
+  const maxDpr = dpr || (hd ? (mobile ? 1.75 : 2) : (mobile ? 1.5 : 1.75));
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -135,6 +135,18 @@ export function createStage(canvas, { mobile = false, hd = false } = {}) {
     scene.fog.color.set("#cdd8e6");
   }
 
+  /* evening on the photo sky: dim the sky and the sun, warm the light (t: 0 day → 1 dusk) */
+  function setPhotoDusk(t) {
+    if (!usingPhoto) return;
+    scene.backgroundIntensity = 1.6 * (1 - 0.88 * t);
+    scene.environmentIntensity = 1 - 0.8 * t;
+    sun.intensity = 3.4 * (1 - 0.9 * t);
+    sun.color.setRGB(1, 0.95 - 0.3 * t, 0.88 - 0.45 * t);
+    hemi.intensity = 0.05;
+    renderer.toneMappingExposure = 0.62 + 0.1 * t;
+    scene.fog.color.setRGB(0.8 - 0.62 * t, 0.85 - 0.65 * t, 0.9 - 0.62 * t);
+  }
+
   /* ---------- post-processing (hd) ---------- */
   let composer = null, gtao = null;
   const aoCam = camera.clone();
@@ -182,5 +194,5 @@ export function createStage(canvas, { mobile = false, hd = false } = {}) {
     }, type, 0.92));
   }
 
-  return { renderer, scene, camera, sun, setSun, usePhotoSky, isPhotoSky: () => usingPhoto, resize, render, snapshot };
+  return { renderer, scene, camera, sun, setSun, usePhotoSky, setPhotoDusk, isPhotoSky: () => usingPhoto, resize, render, snapshot };
 }

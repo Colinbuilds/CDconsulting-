@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ballpark estimate | CD Consulting</title>
+  <meta name="description" content="Switch on the roofing, siding, window, gutter and door work you're considering and get a realistic price range in seconds." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="estimate">
+  <script src="js/layout.js"></script>
+
+  <main>
+<!-- ============ ESTIMATOR ============ -->
+    <section class="section band estimator" id="estimate" aria-labelledby="est-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="label">Ballpark estimate</p>
+          <h1 id="est-title">Know the number <em>before</em> you call.</h1>
+          <p class="sec-sub">Switch on the work you're considering. You'll get a realistic range in seconds. It's not a quote, but it's enough to plan with.</p>
+        </header>
+
+        <div class="est-layout">
+          <div class="est-left">
+            <div class="est-fields">
+              <label class="field">
+                <span>Home footprint (sq ft, ground floor)</span>
+                <input type="number" id="footprint" min="400" max="10000" step="50" value="1600" inputmode="numeric"/>
+              </label>
+              <label class="field">
+                <span>Stories</span>
+                <select id="stories"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select>
+              </label>
+              <label class="field">
+                <span>Roof pitch</span>
+                <select id="pitch"><option value="low">Low / walkable</option><option value="med" selected>Medium</option><option value="steep">Steep</option></select>
+              </label>
+              <label class="field">
+                <span>Market</span>
+                <select id="market"><option value="0.88">Lower cost area</option><option value="1" selected>Average</option><option value="1.18">High cost area</option><option value="1.35">Major metro</option></select>
+              </label>
+            </div>
+            <div class="est-items" id="estItems"></div>
+          </div>
+
+          <aside class="est-out" aria-live="polite">
+            <span class="label">Estimated investment</span>
+            <div class="est-range"><span id="estLow">$0</span><i>–</i><span id="estHigh">$0</span></div>
+            <div class="est-bar"><b id="estBar"></b></div>
+            <ul class="est-breakdown" id="estBreakdown"><li class="empty">Select at least one job.</li></ul>
+            <button class="btn btn-blue btn-block" id="sendEstimate">Get a real quote</button>
+            <p class="fine">Ballpark only. Real pricing depends on inspection, decking, code, access and materials. Insurance work can change your out-of-pocket cost dramatically.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/estimator.js"></script>
+</body>
+</html>
