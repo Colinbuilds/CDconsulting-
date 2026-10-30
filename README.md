@@ -43,9 +43,21 @@ Every lead also prints to the deploy logs (`NEW LEAD …`), so none are lost bef
 | Route | What it does | Free source | With `GOOGLE_MAPS_API_KEY` |
 |---|---|---|---|
 | `/api/geocode` | Address → location | OpenStreetMap, then the US Census geocoder | Google Geocoding (rooftop accurate) |
-| `/api/roof` | Roof outline + footprint size | `COUNTY_GIS_URL` if set, then FEMA USA Structures (every US building, public domain), then OpenStreetMap | Google Solar API roof scan: measured roof area and pitch |
+| `/api/roof` | Roof outline + footprint size, streamed step by step to the search window | The county's own GIS (see below), `COUNTY_GIS_URL` if set, then FEMA USA Structures (every US building, public domain), then OpenStreetMap | Google Solar API roof scan: measured roof area and pitch |
 | `/api/aerial` | Photo from above | Esri World Imagery | Google satellite |
 | `/api/street` | Photo from the street | (none; a Street View link is shown) | Google Street View |
+
+**County GIS built in** (`gis-counties.js`):
+
+| County | Layer | Buildings |
+|---|---|---|
+| Douglas, NE (Omaha) | [DOGIS 2022 Building Footprints](https://dcgis.org/server/rest/services/Hosted/2022_Building_Footprints/FeatureServer/0) | 268,909 |
+| Sarpy, NE | [Sarpy County Building Footprints](https://geodata.sarpy.gov/arcgis/rest/services/Cadastral/LandRecordsDynamic/MapServer/42) | 79,348 |
+| Lancaster, NE (Lincoln) | [Lincoln–Lancaster 2026 Footprints](https://gis.lincoln.ne.gov/public/rest/services/BuildingSafety/BuildingFootprints/MapServer/8) | 160,473 |
+| Pottawattamie, IA (Council Bluffs) | [Pottawattamie 2024 Building Footprints](https://gis.pottcounty-ia.gov/arcgis/rest/services/Hosted/Building_Footprints_2024/FeatureServer/0) | 74,960 |
+| Cass, NE | No public footprints ([open data](https://gis-cass.hub.arcgis.com) has parcels only), so FEMA USA Structures is used | — |
+
+To add a county, add an entry with its layer URL and a rough bounding box to `gis-counties.js`.
 
 The math: footprint + 1 ft overhang all around → × pitch factor (√(1 + (pitch/12)²); 7/12 by default, the homeowner can change it) → + 8% waste → rounded up to the next ⅓ square → × price per square → + sales tax.
 

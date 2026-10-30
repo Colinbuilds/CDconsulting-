@@ -26,6 +26,63 @@
     return d;
   };
 
+  /* ---------- search window: narrates each lookup as it happens ---------- */
+  const logEl = $("#rqLog"), logList = $("#rqLogList");
+  let logQueue = Promise.resolve();
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const ICON = { run: "", ok: "✓", miss: "–", info: "i", err: "!" };
+  const log = {
+    reset(title) {
+      logQueue = Promise.resolve();
+      logList.innerHTML = "";
+      $("#rqLogTitle").textContent = title;
+      logEl.hidden = false;
+      logEl.classList.add("is-busy");
+    },
+    // steps are real; they're paced a little so each one can be read
+    add(text, state) {
+      logQueue = logQueue.then(async () => {
+        const open = logList.querySelector("li.is-run:last-child");
+        if (open && state !== "run" && state !== "info") {
+          open.className = "is-" + state;
+          open.querySelector("i").textContent = ICON[state];
+          open.insertAdjacentHTML("beforeend", `<small>${esc(text)}</small>`);
+        } else {
+          if (open) { open.className = "is-ok"; open.querySelector("i").textContent = ICON.ok; }
+          logList.insertAdjacentHTML("beforeend", `<li class="is-${state}"><i>${ICON[state]}</i><span>${esc(text)}</span></li>`);
+        }
+        logList.scrollTop = logList.scrollHeight;
+        await pause(state === "run" ? 260 : 160);
+      });
+      return logQueue;
+    },
+    done(title) { return (logQueue = logQueue.then(() => { logEl.classList.remove("is-busy"); if (title) $("#rqLogTitle").textContent = title; })); },
+  };
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // /api/roof streams one JSON object per line: progress steps, then the result
+  async function streamRoof(path) {
+    const r = await fetch(path, { headers: { Accept: "application/x-ndjson" } });
+    if (!r.ok || !r.body) throw Object.assign(new Error("Lookup failed"), { status: r.status });
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = "", last = null;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!line) continue;
+        const o = JSON.parse(line);
+        if (o.step) log.add(o.step, o.state); else last = o;
+      }
+    }
+    if (!last?.ok) throw Object.assign(new Error(last?.error || "Lookup failed"), { status: last?.status || 502 });
+    return last;
+  }
+
   /* ---------- web-mercator helpers for drawing on the photo ---------- */
   const merc = (lat, lon) => [R * lon * Math.PI / 180, R * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))];
   const unmerc = (x, y) => [(2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI, (x / R) * 180 / Math.PI];
@@ -52,13 +109,16 @@
     const q = $("#rqAddr").value.trim();
     if (q.length < 6) return msg("Enter your full street address, city and state.", "err");
     $("#rqGo").disabled = true;
-    msg("Finding your house…");
+    msg("");
+    log.reset("Searching public records for your roof");
     try {
+      log.add(`Looking up “${q}”…`, "run");
       place = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
-      msg("Measuring the roof outline…");
+      log.add(`${place.address}${place.county ? ` · ${place.county}` : ""}`, "ok");
       await measureAt(place.lat, place.lon, true);
-      msg("");
     } catch (err) {
+      log.add(err.status === 404 ? "Address not found" : "Lookup failed", "err");
+      log.done("Search stopped");
       msg(err.status === 404 ? "I couldn't find that address. Check the spelling and include the city and state." : err.message, "err");
     } finally {
       $("#rqGo").disabled = false;
@@ -66,13 +126,15 @@
   });
 
   async function measureAt(lat, lon, recenter) {
-    try { roof = await api(`/api/roof?lat=${lat}&lon=${lon}${recenter ? "" : "&tap=1"}`); }
+    try { roof = await streamRoof(`/api/roof?lat=${lat}&lon=${lon}${recenter ? "" : "&tap=1"}`); }
     catch (err) { if (err.status !== 404) throw err; roof = null; }
     if (recenter || !view) {
       const c = roof?.outline ? centroid(roof.outline) : [lat, lon];
       view = { lat: c[0], lon: c[1], z: fit(roof?.outline) };
+      log.add("Pulling the aerial photo…", "run");
       loadPhotos();
     }
+    await log.done(roof ? "Found your roof" : "No outline at that spot");
     draw(lat, lon);
     showConfirm();
   }
@@ -80,8 +142,8 @@
   function loadPhotos() {
     const img = $("#rqImg");
     $("#rqMap").classList.add("is-loading");
-    img.onload = () => $("#rqMap").classList.remove("is-loading");
-    img.onerror = () => { $("#rqMap").classList.remove("is-loading"); $("#rqMapErr").hidden = false; };
+    img.onload = () => { $("#rqMap").classList.remove("is-loading"); log.add(place.imagery === "google" ? "Google satellite photo" : "Esri satellite photo", "ok"); };
+    img.onerror = () => { $("#rqMap").classList.remove("is-loading"); $("#rqMapErr").hidden = false; log.add("Photo didn't load", "miss"); };
     $("#rqMapErr").hidden = true;
     img.src = `/api/aerial?lat=${view.lat.toFixed(7)}&lon=${view.lon.toFixed(7)}&z=${view.z}&w=${W}&h=${H}`;
     $("#rqCredit").textContent = place.imagery === "google" ? "Imagery © Google" : "Imagery: Esri, Vantor, Earthstar Geographics";
@@ -128,7 +190,7 @@
     const [lat, lon] = toLatLon(((e.clientX - box.left) / box.width) * W, ((e.clientY - box.top) / box.height) * H);
     $("#rqMap").classList.remove("is-tapping");
     $("#rqTapHint").hidden = true;
-    msg("Measuring that roof…");
+    log.reset("Measuring the roof you tapped");
     try { await measureAt(lat, lon, false); msg(""); }
     catch (err) { msg(err.message, "err"); }
   });

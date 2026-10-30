@@ -22,7 +22,7 @@
         <header class="sec-head">
           <p class="label">Roof price by address</p>
           <h1 id="rq-title">Your roof, <em>measured.</em></h1>
-          <p class="sec-sub">Type your address. I'll pull up your house from above, you confirm it's yours, and the roof is measured from the building outline on record. Then you'll see installed pricing for three shingle lines, tax included.</p>
+          <p class="sec-sub">Type your address. I'll pull up your house from above, you confirm it's yours, and the roof is measured from your county's GIS building records. Then you'll see installed pricing for three shingle lines, tax included.</p>
         </header>
 
         <form class="rq-find" id="rqFind" novalidate>
@@ -32,6 +32,11 @@
           <button class="btn btn-blue" id="rqGo" type="submit">Find my roof</button>
         </form>
         <p class="form-msg" id="rqMsg" role="status"></p>
+
+        <div class="rq-log" id="rqLog" hidden>
+          <div class="rq-log-head"><span class="rq-log-dot" aria-hidden="true"></span><span id="rqLogTitle">Searching public records</span></div>
+          <ol class="rq-log-list" id="rqLogList" aria-live="polite"></ol>
+        </div>
 
         <div class="rq-confirm" id="rqConfirm" hidden>
           <div class="rq-photos">

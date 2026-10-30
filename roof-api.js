@@ -9,7 +9,10 @@
                            e.g. https://gis.yourcounty.gov/arcgis/rest/services/Buildings/FeatureServer/0).
                            Checked before OpenStreetMap when set.
    Without a key: addresses come from OpenStreetMap / the US Census geocoder, the photo from Esri World Imagery,
-   and the outline from the county layer, FEMA's nationwide USA Structures footprints, or OpenStreetMap. */
+   and the outline from the county's own GIS (built in for the Omaha / Lincoln / Council Bluffs area, see
+   gis-counties.js), then FEMA's nationwide USA Structures footprints, then OpenStreetMap. */
+
+import { countiesAt } from "./gis-counties.js";
 
 const KEY = () => process.env.GOOGLE_MAPS_API_KEY || "";
 const UA = "CDConsulting-site/1.0 (roof quote)";
@@ -74,7 +77,7 @@ async function geocode(q) {
     const a = d[0]?.address;
     if (a?.house_number && d[0].category !== "highway") {
       const town = a.city || a.town || a.village || a.hamlet || a.suburb || a.county || "";
-      return { lat: +d[0].lat, lon: +d[0].lon, address: `${a.house_number} ${a.road || ""}, ${town}, ${a.state || ""} ${a.postcode || ""}`.replace(/\s+,/g, ",").trim(), source: "OpenStreetMap" };
+      return { lat: +d[0].lat, lon: +d[0].lon, county: a.county && `${a.county}, ${a["ISO3166-2-lvl4"]?.slice(3) || a.state}`, address: `${a.house_number} ${a.road || ""}, ${town}, ${a.state || ""} ${a.postcode || ""}`.replace(/\s+,/g, ",").trim(), source: "OpenStreetMap" };
     }
   } catch (e) { console.warn("nominatim", e.message); }
   const d = await getJSON(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?benchmark=Public_AR_Current&format=json&address=${encodeURIComponent(q)}`);
@@ -106,13 +109,12 @@ async function fromArcGIS(base, label, lat, lon, maxD) {
   // one box query ~45 m around the point; pick() takes the building at the point or the nearest house-sized one
   const dLat = 45 / 111320, dLon = 45 / (111320 * Math.cos((lat * Math.PI) / 180));
   const d = await getJSON(`${base}/query?f=json&geometry=${lon - dLon},${lat - dLat},${lon + dLon},${lat + dLat}&geometryType=esriGeometryEnvelope` +
-    `&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326&outFields=OBJECTID`, {}, 20000);
+    `&inSR=4326&spatialRel=esriSpatialRelIntersects&returnGeometry=true&outSR=4326`, {}, 20000);
   if (d.error) throw new Error(d.error.message || "arcgis error");
   const rings = (d.features || []).map((f) => f.geometry?.rings?.[0]?.map(([x, y]) => [y, x])).filter(Boolean);
   const b = pick([lat, lon], rings, maxD);
   return b && { source: label, outline: b.ring, ...ftOf(b) };
 }
-const fromCounty = (lat, lon, maxD) => fromArcGIS(process.env.COUNTY_GIS_URL, "County GIS building footprint", lat, lon, maxD);
 // FEMA / Oak Ridge National Lab "USA Structures": public-domain footprints for every US building
 const FEMA = "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0";
 const fromFEMA = (lat, lon, maxD) => fromArcGIS(FEMA, "FEMA USA Structures building footprint", lat, lon, maxD);
@@ -131,21 +133,42 @@ async function fromOSM(lat, lon, maxD) {
   throw new Error("footprint services unavailable");
 }
 
-async function footprint(lat, lon, maxD) {
-  const tries = [...(process.env.COUNTY_GIS_URL ? [fromCounty] : []), fromFEMA, fromOSM];
+// log(text, state): narrates each lookup for the search window on the estimate page
+async function footprint(lat, lon, maxD, log) {
+  const tries = [];
+  for (const c of countiesAt(lat, lon)) {
+    if (!c.url) { log(`${c.name} doesn't publish building footprints; checking neighbors and the national dataset`, "info"); continue; }
+    tries.push({ label: `${c.short}${c.year ? ` · ${c.year} footprints` : ""}`, run: () => fromArcGIS(c.url, `${c.name} GIS building footprint${c.year ? ` (${c.year})` : ""}`, lat, lon, maxD), county: c.name });
+  }
+  if (process.env.COUNTY_GIS_URL) tries.push({ label: "County GIS layer", run: () => fromArcGIS(process.env.COUNTY_GIS_URL, "County GIS building footprint", lat, lon, maxD) });
+  tries.push({ label: "FEMA USA Structures (national)", run: () => fromFEMA(lat, lon, maxD) });
+  tries.push({ label: "OpenStreetMap buildings", run: () => fromOSM(lat, lon, maxD) });
   let answered = false;
-  for (const f of tries) {
-    try { const r = await f(lat, lon, maxD); answered = true; if (r) return r; } catch (e) { console.warn("roof", f.name, e.message); }
+  for (const t of tries) {
+    log(`Searching ${t.label}…`, "run");
+    try {
+      const r = await t.run();
+      answered = true;
+      if (r) { log(`Found the building: ${r.footprintSqFt.toLocaleString("en-US")} sq ft footprint, ${new Set(r.outline.map(String)).size} corners`, "ok"); return { ...r, county: t.county }; }
+      log(`No building at that spot in ${t.label}`, "miss");
+    } catch (e) {
+      console.warn("roof", t.label, e.message);
+      log(`${t.label} didn't answer`, "miss");
+    }
   }
   if (!answered) throw new Error("footprint services unavailable");
   return null;
 }
 // maxD: how far from the point a building may be (a homeowner's tap lands on the roof itself)
-async function roof(lat, lon, maxD) {
+async function roof(lat, lon, maxD, log = () => {}) {
   let solar = null;
-  if (KEY()) try { solar = await fromGoogleSolar(lat, lon); } catch (e) { console.warn("roof solar", e.message); }
+  if (KEY()) {
+    log("Running Google's roof scan…", "run");
+    try { solar = await fromGoogleSolar(lat, lon); } catch (e) { console.warn("roof solar", e.message); }
+    log(solar ? `Roof scan: ${solar.facets} roof planes, about ${solar.pitch}/12 pitch` : "No roof scan for this address", solar ? "ok" : "miss");
+  }
   let fp = null;
-  try { fp = await footprint(lat, lon, maxD); } catch (e) { if (!solar) throw e; }
+  try { fp = await footprint(lat, lon, maxD, log); } catch (e) { if (!solar) throw e; }
   if (!solar) return fp;
   // measured by Google's roof scan; draw the real outline when we have one
   return fp ? { ...fp, ...solar, outline: fp.outline, box: false, source: solar.source } : solar;
@@ -198,13 +221,23 @@ export async function handleRoofApi(req, res, json) {
       const q = (p.get("q") || "").trim().slice(0, 200);
       if (q.length < 6) return json(res, 400, { ok: false, error: "Enter a full street address" });
       const g = await geocode(q);
+      if (g && !g.county) g.county = countiesAt(g.lat, g.lon)[0]?.name;
       return g ? json(res, 200, { ok: true, ...g, imagery: KEY() ? "google" : "esri" }) : json(res, 404, { ok: false, error: "Couldn't find that address" });
     }
     const lat = num(p.get("lat"), 17, 72), lon = num(p.get("lon"), -180, -60);
     if (lat == null || lon == null) return json(res, 400, { ok: false, error: "Bad location" });
     if (u.pathname === "/api/roof") {
-      const r = await roof(lat, lon, p.get("tap") ? 12 : 45);
-      return r ? json(res, 200, { ok: true, ...r }) : json(res, 404, { ok: false, error: "No building outline found there" });
+      // streamed as one JSON object per line, so the page can show each lookup as it happens
+      res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
+      const send = (o) => res.write(JSON.stringify(o) + "\n");
+      try {
+        const r = await roof(lat, lon, p.get("tap") ? 12 : 45, (text, state) => send({ step: text, state }));
+        send(r ? { ok: true, ...r } : { ok: false, status: 404, error: "No building outline found there" });
+      } catch (e) {
+        console.error("roof api", e.message);
+        send({ ok: false, status: 502, error: "Lookup service is busy. Try again in a minute." });
+      }
+      return res.end();
     }
     if (u.pathname === "/api/aerial" || u.pathname === "/api/street") {
       const shot = u.pathname === "/api/aerial"

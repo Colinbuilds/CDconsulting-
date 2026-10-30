@@ -811,3 +811,19 @@ main > :first-child:not(.proc) { padding-top: calc(var(--nav-h) + var(--section)
   .rq-product small { display: none; }
   .rq-product b { font-size: 1.3rem; }
 }
+
+/* search window: each county / national lookup as it happens */
+.rq-log { max-width: 760px; margin-top: 1.4rem; border-radius: 16px; background: #0d0f14; border: 1px solid rgba(255, 255, 255, .1); box-shadow: var(--shadow); overflow: hidden; color: #d9dce3; }
+.rq-log-head { display: flex; align-items: center; gap: .7rem; padding: .75rem 1.1rem; border-bottom: 1px solid rgba(255, 255, 255, .08); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #aeb3bd; }
+.rq-log-dot { width: 8px; height: 8px; border-radius: 50%; background: #57c98d; }
+.rq-log.is-busy .rq-log-dot { background: #9bb3ef; animation: pulse 1s infinite; }
+.rq-log-list { list-style: none; margin: 0; padding: .7rem 1.1rem .9rem; display: grid; gap: .45rem; max-height: 230px; overflow-y: auto; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.45; }
+.rq-log-list li { display: grid; grid-template-columns: 1.1rem minmax(0, 1fr); column-gap: .6rem; animation: rise .3s var(--ease) both; }
+.rq-log-list i { font-style: normal; text-align: center; color: #9bb3ef; }
+.rq-log-list li.is-run i { width: .8rem; height: .8rem; margin: .2rem auto 0; border: 1.5px solid #9bb3ef; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+.rq-log-list li.is-ok i { color: #57c98d; }
+.rq-log-list li.is-miss i, .rq-log-list li.is-info i { color: #868b94; }
+.rq-log-list li.is-err i { color: #ef7563; }
+.rq-log-list small { grid-column: 2; font-size: .76rem; color: #8f95a0; }
+.rq-log-list li.is-ok small { color: #a5d9bd; }
+@keyframes spin { to { transform: rotate(360deg); } }
