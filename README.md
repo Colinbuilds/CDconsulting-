@@ -7,10 +7,12 @@ Static site plus a tiny Node server (`server.js`) for the lead form. No build st
 |---|---|
 | `index.html` | Full-screen 3D walkthrough of a full roof + siding job (the rest of the page unlocks once it's scrolled through), then who I am + what I do, About, and the lead form |
 | `roofing.html`, `siding.html`, `windows.html`, `gutters.html` | A full-screen 3D walkthrough of that trade, every step explained, then a checklist link and CTA |
-| `design.html` | 3D exterior designer + paint-your-photo |
-| `estimate.html` | Roof price by address (find the house, confirm it on an aerial photo, measure the roof, price three shingle lines with tax), plus the ballpark estimator for other work |
+| `design.html` | 3D exterior designer + your-photo mode: upload a photo and the roof, siding, trim and doors are found automatically (`js/photo-detect.js`); the color panel recolors them, keeping the photo's light and texture; click any area to correct it |
+| `estimate.html` | Roof price by address: the address opens a movable aerial map, the homeowner clicks their house, the county GIS outline loads as a polygon they can trace and adjust, priced at 7/12 pitch + 8% waste for three shingle lines with tax. Plus the ballpark estimator for other work |
 | `insurance.html` | Insurance claims guide + "Should I file?" check |
-| `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device, prints) |
+| `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device). Adds to Apple Reminders / to-do apps / calendar, prints on one page, and has a "send me a photo when done" form |
+| `builder.html` | Building designer: draw walls in real assemblies, doors, windows, floors, roofs, decks, porches, chimneys, roof items, plumbing / HVAC / electrical, appliances and furniture; live 3D, walk-through, and a printable plan set with a materials takeoff |
+| `commercial.html` | Commercial flat-roof planner: membrane, parapet, walls; place RTUs, exhaust fans, skylights, solar, hatches, vents, walkway pads and drains in 3D, with live checks for edge clearance, curb spacing and drains |
 | `work.html` | Past projects |
 
 Nav + footer are shared from `js/layout.js`. Anything attached on one page (a design, render, ballpark, claim check) is carried to the lead form on the home page through `sessionStorage`.
@@ -66,6 +68,27 @@ Railway variables (all optional):
 - `COUNTY_GIS_URL`: your county's building-footprint layer, an ArcGIS REST URL ending in `/FeatureServer/<n>` or `/MapServer/<n>`. Most county GIS portals publish one.
 
 Esri World Imagery is shown with attribution. For heavy commercial use, create a free ArcGIS Location Platform account, or set the Google key to use Google imagery instead.
+
+## Building designer (`builder.html`)
+Code in `js/builder/`:
+
+| File | What it does |
+|---|---|
+| `core.js` | The document (levels, walls on shared corners, openings, rooms found from the wall graph, roofs, items, runs), undo/redo, templates, materials takeoff |
+| `catalog.js` | Wall assemblies layer by layer, door/window styles, every placeable item with its plan symbol |
+| `plan.js` | The 2D plan: editor (snap to corners, walls, grid and 45°; draw, place, drag) and the printed floor plans |
+| `scene.js` | The 3D model, orbit + walk-through viewer, and the line-drawing elevations / roof plan for prints |
+| `prints.js` | The plan set: cover, floor plans at true scale, elevations, roof plan, plumbing/HVAC/electrical plans, wall assemblies, schedules, materials takeoff |
+| `app.js` | Tools, catalog, inspector, floors, files, prints and "Send to Colin" |
+
+Designs autosave in the browser; "Save file" / "Open" move them between computers. The original plan for it is in [`docs/cad-builder-plan.md`](docs/cad-builder-plan.md).
+
+## Photo auto-detect (`js/photo-detect.js`)
+1. SegFormer-B2 (ADE20K) runs in the browser through transformers.js (loaded from jsDelivr; the 29 MB model comes from Hugging Face once, then the browser caches it; WebGPU when available, otherwise WebAssembly) to find the house, windows, doors, sky and trees.
+2. SLIC superpixels give clean edges.
+3. Roof and siding are split by color/texture prototypes: patches along the top edge of the house are roof samples, the lower walls are siding samples, and each patch takes the nearest one, smoothed with its neighbors. Light neutral patches become trim; brick/stone and window glass are left as they are.
+
+Recoloring keeps each pixel's brightness relative to its area, so shingles, laps, shadows and lighting survive the color change.
 
 ## Lead form
 `js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.

@@ -1,6 +1,6 @@
-/* Roof price by address: find the house, show it from above to confirm, measure the roof outline
-   (county GIS / OpenStreetMap footprint, or Google's roof scan when a key is set on the server),
-   then price it per square for each shingle line in ROOF_PRICING, with tax. */
+/* Roof price by address: the address opens a movable aerial map, the homeowner clicks their house,
+   the county GIS outline of that building is loaded as a polygon they can trace and adjust, and the
+   traced footprint is priced per square for each shingle line in ROOF_PRICING (7/12 pitch, 8% waste), with tax. */
 (function () {
   const $ = (s) => document.querySelector(s);
   const form = $("#rqFind");
@@ -10,11 +10,9 @@
   const money2 = (n) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // squares are priced in thirds (3 bundles to a square): 19.67 → "19⅔"
   const sq = (n) => { const w = Math.floor(n + 1e-6), t = Math.round((n - w) * 3); return t === 3 ? `${w + 1}` : `${w || (t ? "" : 0)}${["", "⅓", "⅔"][t]}`; };
-  const W = 640, H = 420; // photo size in CSS px (requested at 2×)
-  const R = 6378137, MPP0 = 156543.03392804097;
+  const R = 6378137;
 
   let place = null;   // { lat, lon, address, imagery }
-  let view = null;    // { lat, lon, z } of the photo on screen
   let roof = null;    // measurement from /api/roof (or manual)
   let pick = null;    // chosen product id
 
@@ -83,39 +81,37 @@
     return last;
   }
 
-  /* ---------- web-mercator helpers for drawing on the photo ---------- */
-  const merc = (lat, lon) => [R * lon * Math.PI / 180, R * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))];
-  const unmerc = (x, y) => [(2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) * 180 / Math.PI, (x / R) * 180 / Math.PI];
-  function toPx(lat, lon) {
-    const [cx, cy] = merc(view.lat, view.lon), [x, y] = merc(lat, lon), mpp = MPP0 / 2 ** view.z;
-    return [W / 2 + (x - cx) / mpp, H / 2 - (y - cy) / mpp];
+  /* ---------- geometry ---------- */
+  // ring of L.LatLng → area (sq ft) and perimeter (ft), on a local flat projection (fine at house scale)
+  function measure(pts) {
+    if (pts.length < 3) return { area: 0, perimeter: 0 };
+    const lat0 = (pts.reduce((s, p) => s + p.lat, 0) / pts.length) * Math.PI / 180;
+    const xy = pts.map((p) => [R * p.lng * Math.PI / 180 * Math.cos(lat0), R * p.lat * Math.PI / 180]);
+    let a = 0, per = 0;
+    for (let i = 0; i < xy.length; i++) {
+      const [x1, y1] = xy[i], [x2, y2] = xy[(i + 1) % xy.length];
+      a += x1 * y2 - x2 * y1;
+      per += Math.hypot(x2 - x1, y2 - y1);
+    }
+    return { area: Math.abs(a) / 2 * 10.7639, perimeter: per * 3.28084 };
   }
-  function toLatLon(px, py) {
-    const [cx, cy] = merc(view.lat, view.lon), mpp = MPP0 / 2 ** view.z;
-    return unmerc(cx + (px - W / 2) * mpp, cy - (py - H / 2) * mpp);
-  }
-  // highest zoom that fits the outline comfortably
-  function fit(ring) {
-    if (!ring) return 19;
-    const xs = ring.map((p) => merc(...p)[0]), ys = ring.map((p) => merc(...p)[1]);
-    const span = Math.max((Math.max(...xs) - Math.min(...xs)) / (W * 0.6), (Math.max(...ys) - Math.min(...ys)) / (H * 0.6));
-    return Math.max(17, Math.min(20, Math.floor(Math.log2(MPP0 / Math.max(span, 1e-6)))));
-  }
-  const centroid = (ring) => [ring.reduce((s, p) => s + p[0], 0) / ring.length, ring.reduce((s, p) => s + p[1], 0) / ring.length];
+  const feet = (a, b) => a.distanceTo(b) * 3.28084;
 
-  /* ---------- step 1: find + confirm ---------- */
+  /* ---------- step 1: find the address, then the homeowner marks the house on a movable map ---------- */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const q = $("#rqAddr").value.trim();
     if (q.length < 6) return msg("Enter your full street address, city and state.", "err");
     $("#rqGo").disabled = true;
     msg("");
-    log.reset("Searching public records for your roof");
+    log.reset("Pulling up your property");
     try {
       log.add(`Looking up “${q}”…`, "run");
       place = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
       log.add(`${place.address}${place.county ? ` · ${place.county}` : ""}`, "ok");
-      await measureAt(place.lat, place.lon, true);
+      log.add("Loading the county map…", "run");
+      openMap();
+      await log.done("Click your house on the map");
     } catch (err) {
       log.add(err.status === 404 ? "Address not found" : "Lookup failed", "err");
       log.done("Search stopped");
@@ -125,74 +121,212 @@
     }
   });
 
-  async function measureAt(lat, lon, recenter) {
-    try { roof = await streamRoof(`/api/roof?lat=${lat}&lon=${lon}${recenter ? "" : "&tap=1"}`); }
-    catch (err) { if (err.status !== 404) throw err; roof = null; }
-    if (recenter || !view) {
-      const c = roof?.outline ? centroid(roof.outline) : [lat, lon];
-      view = { lat: c[0], lon: c[1], z: fit(roof?.outline) };
-      log.add("Pulling the aerial photo…", "run");
-      loadPhotos();
-    }
-    await log.done(roof ? "Found your roof" : "No outline at that spot");
-    draw(lat, lon);
-    showConfirm();
-  }
+  let map = null, houseMark = null, stage = "mark";
+  const shape = { pts: [], closed: false, layer: null, handles: L.layerGroup(), from: null };
 
-  function loadPhotos() {
-    const img = $("#rqImg");
-    $("#rqMap").classList.add("is-loading");
-    img.onload = () => { $("#rqMap").classList.remove("is-loading"); log.add(place.imagery === "google" ? "Google satellite photo" : "Esri satellite photo", "ok"); };
-    img.onerror = () => { $("#rqMap").classList.remove("is-loading"); $("#rqMapErr").hidden = false; log.add("Photo didn't load", "miss"); };
-    $("#rqMapErr").hidden = true;
-    img.src = `/api/aerial?lat=${view.lat.toFixed(7)}&lon=${view.lon.toFixed(7)}&z=${view.z}&w=${W}&h=${H}`;
-    $("#rqCredit").textContent = place.imagery === "google" ? "Imagery © Google" : "Imagery: Esri, Vantor, Earthstar Geographics";
-    const sv = $("#rqStreet");
-    $("#rqStreetFig").hidden = true;
-    if (place.imagery === "google") {
-      sv.onload = () => { $("#rqStreetFig").hidden = false; };
-      sv.src = `/api/street?lat=${view.lat.toFixed(7)}&lon=${view.lon.toFixed(7)}`;
+  function openMap() {
+    $("#rqConfirm").hidden = false;
+    $("#rqFound").textContent = place.address;
+    if (!map) {
+      map = L.map("rqMap", { zoomControl: true, maxZoom: 21, tap: true, doubleClickZoom: false });
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxNativeZoom: 19, maxZoom: 21, attribution: "Imagery: Esri, Vantor, Earthstar Geographics",
+      }).on("load", () => log.add("Aerial map ready", "ok")).addTo(map);
+      // street names on top of the photo
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxNativeZoom: 19, maxZoom: 21, opacity: 0.8 }).addTo(map);
+      shape.handles.addTo(map);
+      map.on("click", onMapClick);
     }
+    map.setView([place.lat, place.lon], 19);
+    setTimeout(() => map.invalidateSize(), 50);
+    restart();
     const a = place.address;
     $("#rqEarth").href = `https://earth.google.com/web/search/${encodeURIComponent(a)}`;
     $("#rqZillow").href = `https://www.zillow.com/homes/${encodeURIComponent(a.replace(/,/g, "").replace(/\s+/g, "-"))}_rb/`;
-    $("#rqSV").href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${view.lat},${view.lon}`;
-  }
-
-  function draw(lat, lon) {
-    const svg = $("#rqSvg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    if (roof?.outline) {
-      const pts = roof.outline.map((p) => toPx(...p).map((v) => v.toFixed(1)).join(",")).join(" ");
-      svg.innerHTML = `<polygon points="${pts}" class="rq-outline${roof.box ? " is-box" : ""}"/>`;
-    } else {
-      const [x, y] = toPx(lat, lon);
-      svg.innerHTML = `<circle cx="${x}" cy="${y}" r="9" class="rq-dot"/>`;
+    $("#rqSV").href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${place.lat},${place.lon}`;
+    $("#rqStreetFig").hidden = true;
+    if (place.imagery === "google") {
+      const sv = $("#rqStreet");
+      sv.onload = () => { $("#rqStreetFig").hidden = false; };
+      sv.src = `/api/street?lat=${place.lat.toFixed(7)}&lon=${place.lon.toFixed(7)}`;
     }
-  }
-
-  function showConfirm() {
-    $("#rqConfirm").hidden = false;
-    $("#rqFound").textContent = place.address;
-    $("#rqNoRoof").hidden = !!roof;
-    $("#rqYes").hidden = !roof;
     $("#rqConfirm").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  $("#rqYes").addEventListener("click", () => startQuote());
-  $("#rqNo").addEventListener("click", () => {
-    $("#rqMap").classList.add("is-tapping");
-    $("#rqTapHint").hidden = false;
-  });
-  $("#rqMap").addEventListener("click", async (e) => {
-    if (!view || !$("#rqMap").classList.contains("is-tapping") && roof) return;
-    const box = e.currentTarget.getBoundingClientRect();
-    const [lat, lon] = toLatLon(((e.clientX - box.left) / box.width) * W, ((e.clientY - box.top) / box.height) * H);
-    $("#rqMap").classList.remove("is-tapping");
-    $("#rqTapHint").hidden = true;
-    log.reset("Measuring the roof you tapped");
-    try { await measureAt(lat, lon, false); msg(""); }
-    catch (err) { msg(err.message, "err"); }
+  function setStage(s) {
+    stage = s;
+    $("#rqStep1").className = s === "mark" ? "is-on" : "is-done";
+    $("#rqStep2").className = s === "mark" ? "" : "is-on";
+    $("#rqTools").hidden = s === "mark";
+    $("#rqUndo").hidden = s !== "draw";
+    $("#rqRedraw").hidden = s !== "draw";
+    $("#rqTools").hidden = s === "mark" || s === "lookup" || s === "tracing";
+    $("#rqMap").classList.toggle("is-marking", s === "mark" || s === "draw");
+    read();
+  }
+
+  function restart() {
+    if (houseMark) { houseMark.remove(); houseMark = null; }
+    clearShape();
+    setStage("mark");
+  }
+
+  async function onMapClick(e) {
+    if (stage === "mark") {
+      // the homeowner's click marks the house; look up the building right under it
+      houseMark = L.marker(e.latlng, { icon: L.divIcon({ className: "rq-house", html: "<span></span>", iconSize: [30, 30], iconAnchor: [15, 30] }) }).addTo(map);
+      setStage("lookup");
+      log.reset("Finding the building you marked");
+      try {
+        roof = await streamRoof(`/api/roof?lat=${e.latlng.lat}&lon=${e.latlng.lng}&tap=1`);
+      } catch (err) {
+        if (err.status !== 404) log.add(err.message, "err");
+        roof = null;
+      }
+      if (roof?.outline && !roof.box) {
+        const pts = roof.outline.map(([la, lo]) => L.latLng(la, lo));
+        if (pts.length > 1 && pts[0].equals(pts[pts.length - 1])) pts.pop();
+        map.fitBounds(L.latLngBounds(pts), { padding: innerWidth < 640 ? [36, 36] : [70, 70], maxZoom: 21, animate: false });
+        log.add("Tracing the roof outline…", "run");
+        await autoTrace(pts);
+        log.add(`Traced ${pts.length} corners`, "ok");
+        await log.done("Your roof is traced");
+        loadShape(pts, roof.source);
+      } else {
+        await log.done("No outline on record here");
+        clearShape();
+        setStage("draw");
+      }
+    } else if (stage === "draw") {
+      shape.pts.push(e.latlng);
+      redraw();
+    }
+  }
+
+  /* ---------- step 2: the cursor traces the roof on its own ---------- */
+  // a pointer glides corner to corner, drawing the outline and its edge lengths as it goes
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function autoTrace(pts) {
+    clearShape();
+    setStage("tracing");
+    const cursor = L.marker(pts[0], { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: "rq-cursor", iconSize: [26, 26], iconAnchor: [3, 2],
+      html: '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M3 2 21 13l-8 1.6L9.5 23z"/></svg><span>Tracing</span>' }) }).addTo(map);
+    const line = L.polyline([pts[0]], { className: "rq-poly is-open is-tracing" }).addTo(map);
+    const dots = L.layerGroup().addTo(map);
+    const dot = (p) => dots.addLayer(L.marker(p, { interactive: false, icon: L.divIcon({ className: "rq-v is-new", iconSize: [14, 14] }) }));
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    dot(pts[0]);
+    await wait(reduce ? 0 : 350);
+    const total = pts.reduce((s, p, i) => s + feet(p, pts[(i + 1) % pts.length]), 0);
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      // whole trace takes about 3-4 s; every edge gets at least a short glide
+      const ms = reduce ? 0 : Math.max(140, (feet(a, b) / total) * 3200);
+      const t0 = performance.now();
+      const done = line.getLatLngs().slice();
+      await new Promise((res) => {
+        const step = (now) => {
+          const k = ms ? Math.min(1, (now - t0) / ms) : 1, e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+          const p = L.latLng(a.lat + (b.lat - a.lat) * e, a.lng + (b.lng - a.lng) * e);
+          cursor.setLatLng(p);
+          line.setLatLngs([...done, p]);
+          if (k < 1) requestAnimationFrame(step); else res();
+        };
+        requestAnimationFrame(step);
+      });
+      const len = Math.round(feet(a, b));
+      if (len >= 8) dots.addLayer(L.marker(L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2), { interactive: false, icon: L.divIcon({ className: "rq-len is-new", html: `<span>${len} ft</span>`, iconSize: null }) }));
+      if (i < pts.length - 1) dot(b);
+    }
+    cursor.getElement()?.classList.add("is-done");
+    await wait(reduce ? 0 : 600);
+    cursor.remove(); line.remove(); dots.remove();
+  }
+
+  /* ---------- the traced outline: corners can still be nudged if one is off ---------- */
+  function clearShape() {
+    shape.pts = []; shape.closed = false; shape.from = null;
+    if (shape.layer) { shape.layer.remove(); shape.layer = null; }
+    shape.handles.clearLayers();
+  }
+  function loadShape(pts, from) {
+    clearShape();
+    // county rings repeat the first corner at the end
+    if (pts.length > 1 && pts[0].equals(pts[pts.length - 1])) pts.pop();
+    shape.pts = pts; shape.closed = true; shape.from = from;
+    setStage("edit");
+    redraw();
+  }
+
+  function redraw() {
+    const { pts, closed } = shape;
+    if (shape.layer) shape.layer.remove();
+    shape.layer = (closed ? L.polygon(pts, { className: "rq-poly" }) : L.polyline(pts, { className: "rq-poly is-open" })).addTo(map);
+    shape.handles.clearLayers();
+    const n = pts.length;
+    // edge lengths: drag one to add a corner there
+    const edges = closed ? n : n - 1;
+    for (let i = 0; i < edges; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      const mid = L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2);
+      const len = Math.round(feet(a, b));
+      // short jogs get a small dot instead of a label so they don't crowd the corners
+      const m = L.marker(mid, { draggable: closed, icon: L.divIcon({ className: "rq-len", html: len < 8 ? "<i></i>" : `<span>${len} ft</span>`, iconSize: null }) });
+      if (closed) {
+        let at = -1;
+        m.on("dragstart", () => { at = i + 1; pts.splice(at, 0, m.getLatLng()); });
+        m.on("drag", () => { pts[at] = m.getLatLng(); shape.layer.setLatLngs(pts); read(); });
+        m.on("dragend", () => { shape.from = null; redraw(); });
+      }
+      shape.handles.addLayer(m);
+    }
+    pts.forEach((p, i) => {
+      const v = L.marker(p, { draggable: true, icon: L.divIcon({ className: "rq-v" + (i === 0 && !closed ? " is-first" : ""), iconSize: [18, 18] }) });
+      v.on("drag", () => { pts[i] = v.getLatLng(); shape.layer.setLatLngs(pts); read(); });
+      v.on("dragend", () => { shape.from = null; redraw(); });
+      v.on("click", () => {
+        // clicking the first corner closes the outline
+        if (!closed && i === 0 && n >= 3) { shape.closed = true; setStage("edit"); redraw(); }
+      });
+      v.on("contextmenu", (ev) => {
+        L.DomEvent.preventDefault(ev.originalEvent);
+        if (n > 3 || !closed) { pts.splice(i, 1); shape.from = null; redraw(); }
+      });
+      shape.handles.addLayer(v);
+    });
+    read();
+  }
+
+  function read() {
+    const m = measure(shape.pts);
+    const ready = shape.closed && shape.pts.length >= 3;
+    $("#rqUse").disabled = !ready;
+    $("#rqRead").innerHTML =
+      stage === "mark" ? "Click on your house" :
+      stage === "lookup" ? "Looking up the building…" :
+      stage === "tracing" ? "Tracing your roof…" :
+      !ready ? `Click each corner of your roof · ${shape.pts.length} placed${shape.pts.length >= 3 ? " · click the first corner to finish" : ""}` :
+      `<b>${Math.round(m.area).toLocaleString()} sq ft</b> footprint · ${Math.round(m.perimeter)} ft around`;
+    $("#rqStep2Text").textContent =
+      stage === "draw" ? "This building isn't in the county records, so click each corner of your roof, then the first corner to close it. Or enter the size by hand."
+      : stage === "edit" ? "Done. Your roof was traced from county building records. If a corner looks off, drag it."
+      : "Your roof is traced automatically from county building records.";
+  }
+
+  $("#rqRedraw").addEventListener("click", () => { clearShape(); setStage("draw"); });
+  $("#rqUndo").addEventListener("click", () => { shape.pts.pop(); redraw(); });
+  $("#rqRestart").addEventListener("click", restart);
+  $("#rqUse").addEventListener("click", () => {
+    const m = measure(shape.pts);
+    const traced = shape.from == null;
+    roof = {
+      source: traced ? (roof?.source ? `Traced on the aerial map (started from ${roof.source})` : "Traced on the aerial map") : roof.source,
+      footprintSqFt: Math.round(m.area), perimeterFt: Math.round(m.perimeter),
+      outline: shape.pts.map((p) => [p.lat, p.lng]),
+    };
+    $("#rqStep2").className = "is-done";
+    $("#rqStep3").className = "is-on";
+    startQuote();
   });
   $("#rqManualBtn").addEventListener("click", () => {
     roof = { source: "Entered by homeowner", footprintSqFt: 0, perimeterFt: 0, manual: true };
@@ -285,7 +419,8 @@
       `${pr.brand} ${pr.name}: ${money2(total)} incl. ${CFG.taxLabel.toLowerCase()} (${sq(n.squares)} sq × ${money(pr.perSquare)} = ${money2(sub)} + ${money2(tax)})`,
       `Address: ${place.address}`,
       `Roof: ${Math.round(n.foot)} sq ft ${roof.planSqFt != null ? "plan" : "footprint"}, ${n.p}/12 pitch, ${Math.round(n.surface)} sq ft surface, +${Math.round(CFG.waste * 100)}% waste`,
-      `Source: ${roof.source}${roof.manual ? "" : ` · map: https://www.google.com/maps/@${view.lat.toFixed(6)},${view.lon.toFixed(6)},40m/data=!3m1!1e3`}`,
+      `Source: ${roof.source}${roof.outline ? ` · map: https://www.google.com/maps/@${roof.outline[0][0].toFixed(6)},${roof.outline[0][1].toFixed(6)},40m/data=!3m1!1e3` : ""}`,
+      ...(roof.outline ? [`Outline (lat,lon): ${roof.outline.map((p) => p.map((v) => v.toFixed(6)).join(",")).join(" ")}`] : []),
     ];
     window.CD.attach("roofQuote", lines.join(" | "));
     window.CD.attach("address", place.address);

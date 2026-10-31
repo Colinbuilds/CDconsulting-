@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="js/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body data-page="estimate">
@@ -22,7 +23,7 @@
         <header class="sec-head">
           <p class="label">Roof price by address</p>
           <h1 id="rq-title">Your roof, <em>measured.</em></h1>
-          <p class="sec-sub">Type your address. I'll pull up your house from above, you confirm it's yours, and the roof is measured from your county's GIS building records. Then you'll see installed pricing for three shingle lines, tax included.</p>
+          <p class="sec-sub">Type your address. Your house comes up on the county map. Click your house, watch the roof get traced, and see installed pricing for three shingle lines, tax included.</p>
         </header>
 
         <form class="rq-find" id="rqFind" novalidate>
@@ -40,37 +41,38 @@
 
         <div class="rq-confirm" id="rqConfirm" hidden>
           <div class="rq-photos">
-            <figure>
-              <div class="rq-map" id="rqMap">
-                <img id="rqImg" alt="Your house from above" width="640" height="420" />
-                <svg id="rqSvg" aria-hidden="true"></svg>
-                <p class="rq-map-err" id="rqMapErr" hidden>The aerial photo didn't load. Use the links to check your house.</p>
+            <div class="rq-mapwrap">
+              <div class="rq-leaflet" id="rqMap" aria-label="Map of your property. Drag to move, scroll or pinch to zoom."></div>
+              <div class="rq-maptools" id="rqTools" hidden>
+                <button type="button" class="chip" id="rqRedraw">Redraw outline</button>
+                <button type="button" class="chip" id="rqUndo">Undo last corner</button>
+                <button type="button" class="chip" id="rqRestart">Move my marker</button>
               </div>
-              <figcaption id="rqCredit"></figcaption>
-            </figure>
+              <div class="rq-mapread" id="rqRead" aria-live="polite"></div>
+            </div>
             <figure id="rqStreetFig" hidden>
               <img id="rqStreet" alt="Your house from the street" width="640" height="400" />
               <figcaption>Street View © Google</figcaption>
             </figure>
           </div>
           <div class="rq-side">
-            <p class="label">Step 1 of 2</p>
-            <h2>Is this <em>your</em> house?</h2>
             <p class="rq-found" id="rqFound"></p>
-            <p class="rq-noroof" id="rqNoRoof" hidden>I couldn't find a building outline at that spot. Tap your roof on the photo, or enter the size by hand.</p>
+            <ol class="rq-steps">
+              <li id="rqStep1"><b>Mark your house</b><span>Drag the map and zoom in until you can see your roof clearly, then click on your house.</span></li>
+              <li id="rqStep2"><b>We trace your roof</b><span id="rqStep2Text">Your roof is traced automatically from county building records.</span></li>
+              <li id="rqStep3"><b>See your price</b><span>7/12 pitch and 8% waste are applied for you.</span></li>
+            </ol>
             <div class="rq-yesno">
-              <button class="btn btn-blue btn-sm" id="rqYes" type="button">Yes, that's my roof</button>
-              <button class="btn btn-ghost btn-sm" id="rqNo" type="button">Not quite, let me tap it</button>
+              <button class="btn btn-blue" id="rqUse" type="button" disabled>See my price</button>
               <button class="btn btn-ghost btn-sm" id="rqManualBtn" type="button">Enter size by hand</button>
             </div>
-            <p class="rq-hint" id="rqTapHint" hidden>Tap the middle of your roof on the photo.</p>
-            <p class="rq-links">Double-check it on <a id="rqEarth" target="_blank" rel="noopener">Google Earth</a>, <a id="rqZillow" target="_blank" rel="noopener">Zillow</a> or <a id="rqSV" target="_blank" rel="noopener">Street View</a>.</p>
+            <p class="rq-links">Not sure it's yours? Check it on <a id="rqEarth" target="_blank" rel="noopener">Google Earth</a>, <a id="rqZillow" target="_blank" rel="noopener">Zillow</a> or <a id="rqSV" target="_blank" rel="noopener">Street View</a>.</p>
           </div>
         </div>
 
         <div class="rq-quote" id="rqQuote" hidden>
           <div class="rq-measure">
-            <p class="label">Step 2 of 2 · Measurement</p>
+            <p class="label">Measurement</p>
             <div class="rq-rows">
               <label class="rq-row"><span id="rqFootLabel">Footprint (sq ft)</span><input id="rqFoot" type="number" min="0" step="10" inputmode="numeric" /></label>
               <div class="rq-row"><span id="rqPlanLabel">With overhang</span><b id="rqPlan">—</b></div>
@@ -137,6 +139,7 @@
   <script src="js/config.js"></script>
   <script src="js/main.js"></script>
   <script src="js/estimator.js"></script>
+  <script src="js/vendor/leaflet/leaflet.js"></script>
   <script src="js/roofquote.js"></script>
 </body>
 </html>

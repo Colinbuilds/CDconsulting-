@@ -194,3 +194,15 @@ export function buildSite() {
 
   return g;
 }
+
+/* trees for other scenes (the commercial lot): spots = [[x, z, height, crown width], ...] */
+export function trees(spots) {
+  const g = new THREE.Group();
+  const bark = new THREE.MeshStandardMaterial({ map: TX.photo("bark", { repeat: 1, repeatY: 3 }), normalMap: TX.photo("bark-nor", { srgb: false, repeat: 1, repeatY: 3 }), roughness: 0.95 });
+  const leaves = new Foliage("tree", spots.length * 1200);
+  for (const [x, z, h, w] of spots) tree(g, leaves, bark, x, z, h, w, { clusters: Math.round(w * 1.2), cards: 14 });
+  leaves.done();
+  leaves.mesh.layers.set(NO_AO);
+  g.add(leaves.mesh);
+  return g;
+}
