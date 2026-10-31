@@ -277,10 +277,12 @@ const STOPS = STEPS.map((st, i) => {
   return clamp(st.at[0] + Math.max(0.006, (end - st.at[0]) * 0.55));
 });
 STOPS.push(1); // the finished house
-const nextStop = () => STOPS.find((p) => p > P + 0.004);
-const prevStop = () => [0, ...STOPS].reverse().find((p) => p < P - 0.004) ?? 0;
+// while a move is still animating, step from where it's headed, so quick clicks don't skip or stall
+let tween = 0, aim = null;
+const at = () => aim ?? P;
+const nextStop = () => STOPS.find((p) => p > at() + 0.004);
+const prevStop = () => [0, ...STOPS].reverse().find((p) => p < at() - 0.004) ?? 0;
 
-let tween = 0;
 // move through the job: the page scrolls, so the build animates exactly as it does when scrolling
 function goTo(target) {
   target = clamp(target);
@@ -288,17 +290,19 @@ function goTo(target) {
   const span = section.offsetHeight - innerHeight, top = section.getBoundingClientRect().top + scrollY;
   const from = scrollY, to = top + target * span, dur = Math.min(1400, 450 + Math.abs(to - from) / span * 2600);
   const t0 = performance.now(), id = ++tween;
+  aim = target;
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
   const step = (now) => {
     if (id !== tween) return;
     const k = Math.min(1, (now - t0) / dur);
     window.scrollTo({ top: from + (to - from) * ease(k), behavior: "instant" });
-    if (k < 1) requestAnimationFrame(step);
+    if (k < 1) requestAnimationFrame(step); else aim = null;
   };
   requestAnimationFrame(step);
 }
-addEventListener("wheel", () => tween++, { passive: true }); // the visitor took over
-addEventListener("touchstart", () => tween++, { passive: true });
+// the visitor took over with the wheel or a finger
+addEventListener("wheel", () => { tween++; aim = null; }, { passive: true });
+addEventListener("touchstart", () => { tween++; aim = null; }, { passive: true });
 
 section.addEventListener("click", (e) => {
   const b = e.target.closest("[data-step],[data-phase]");
@@ -311,7 +315,7 @@ let dragging = false;
 const seek = (e) => {
   const r = ui.track.getBoundingClientRect();
   const k = clamp((e.clientX - r.left) / r.width);
-  if (dragging === "drag") { const span = section.offsetHeight - innerHeight; tween++; window.scrollTo({ top: section.getBoundingClientRect().top + scrollY + k * span, behavior: "instant" }); }
+  if (dragging === "drag") { const span = section.offsetHeight - innerHeight; tween++; aim = null; window.scrollTo({ top: section.getBoundingClientRect().top + scrollY + k * span, behavior: "instant" }); }
   else goTo(k);
 };
 ui.track.addEventListener("pointerdown", (e) => { dragging = "down"; ui.track.setPointerCapture(e.pointerId); seek(e); });

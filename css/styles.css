@@ -903,3 +903,46 @@ main > :first-child:not(.proc) { padding-top: calc(var(--nav-h) + var(--section)
 .cl-done h2 { font-size: clamp(2rem, 3.6vw, 3rem); margin: .6rem 0 1rem; }
 .cl-done p { color: var(--muted); }
 .cl-photo-form { display: grid; gap: 1.2rem; }
+
+/* ==========================================================================
+   COMMERCIAL flat-roof planner
+   ========================================================================== */
+.cm { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+@media (min-width: 1100px) { .cm { grid-template-columns: minmax(0, 1fr) 380px; align-items: start; } .cm-stage { position: sticky; top: calc(var(--nav-h) + 16px); } }
+.cm-stage { position: relative; border-radius: var(--r-lg); overflow: hidden; background: #cfd8e2; box-shadow: var(--shadow); height: min(72vh, 680px); min-height: 420px; }
+.cm-stage canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.cm-stage canvas.is-placing { cursor: crosshair; }
+.cm-loading { position: absolute; inset: 0; display: grid; place-items: center; background: #eef1f5; color: var(--muted); transition: opacity .6s, visibility .6s; }
+.cm-loading.is-gone { opacity: 0; visibility: hidden; }
+.cm-views { position: absolute; top: 14px; left: 14px; display: flex; gap: .4rem; }
+.cm-views .chip { background: rgba(255, 255, 255, .94); border-color: transparent; color: #15181d; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); }
+.cm-views .chip.is-on { background: #15181d; color: #fff; }
+.cm-hint { position: absolute; left: 14px; bottom: 14px; margin: 0; padding: .5rem .85rem; border-radius: 10px; background: rgba(255, 255, 255, .94); color: #15181d; font-size: .9rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); max-width: calc(100% - 28px); }
+.cm-side { display: grid; gap: 1.2rem; min-width: 0; }
+.cm-block { display: grid; gap: .8rem; padding: 1.3rem; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); }
+.cm-block h2 { font-size: 1.6rem; }
+.cm-block h3 { font-size: 1.4rem; }
+.cm-sub, .cm-block p { margin: 0; color: var(--muted); font-size: .95rem; }
+.cm-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.cm-item { display: grid; gap: .1rem; text-align: left; padding: .7rem .8rem; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
+.cm-item b { font-size: .95rem; font-weight: 600; line-height: 1.25; }
+.cm-item small { color: var(--faint); font-size: .86rem; }
+.cm-item:hover, .cm-item.is-on { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface)); }
+.cm-selected { border: 2px solid var(--blue); }
+.cm-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.cm-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem 1rem; margin: 0; }
+.cm-counts dt { font-size: .86rem; color: var(--faint); }
+.cm-counts dd { margin: 0; font-family: var(--f-display); font-size: 1.5rem; font-variant-numeric: lining-nums tabular-nums; }
+.cm-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; max-height: 300px; overflow-y: auto; }
+.cm-checks li { padding: .6rem .75rem; border-radius: 10px; font-size: .92rem; line-height: 1.45; border-left: 4px solid; background: var(--surface-2); }
+.cm-checks li.bad { border-color: var(--no); }
+.cm-checks li.warn { border-color: var(--mid); }
+.cm-checks li.ok { border-color: var(--ok); }
+.cm-opt { display: grid; gap: .4rem; }
+.cm-opt > span { font-size: .9rem; font-weight: 600; color: var(--muted); }
+.cm-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.cm-opt select, .cm-size input { padding: .5rem .6rem; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); color: var(--text); font: inherit; }
+.cm-size { grid-template-columns: 1fr 1fr; }
+.cm-size > span { grid-column: 1 / -1; }
+.cm-size label { display: grid; gap: .2rem; font-size: .9rem; color: var(--muted); }
+.cm-size input { width: 100%; }

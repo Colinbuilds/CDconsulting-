@@ -8,9 +8,10 @@ Static site plus a tiny Node server (`server.js`) for the lead form. No build st
 | `index.html` | Full-screen 3D walkthrough of a full roof + siding job (the rest of the page unlocks once it's scrolled through), then who I am + what I do, About, and the lead form |
 | `roofing.html`, `siding.html`, `windows.html`, `gutters.html` | A full-screen 3D walkthrough of that trade, every step explained, then a checklist link and CTA |
 | `design.html` | 3D exterior designer + paint-your-photo |
-| `estimate.html` | Roof price by address (find the house, confirm it on an aerial photo, measure the roof, price three shingle lines with tax), plus the ballpark estimator for other work |
+| `estimate.html` | Roof price by address: the address opens a movable aerial map, the homeowner clicks their house, the county GIS outline loads as a polygon they can trace and adjust, priced at 7/12 pitch + 8% waste for three shingle lines with tax. Plus the ballpark estimator for other work |
 | `insurance.html` | Insurance claims guide + "Should I file?" check |
-| `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device, prints) |
+| `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device). Adds to Apple Reminders / to-do apps / calendar, prints on one page, and has a "send me a photo when done" form |
+| `commercial.html` | Commercial flat-roof planner: membrane, parapet, walls; place RTUs, exhaust fans, skylights, solar, hatches, vents, walkway pads and drains in 3D, with live checks for edge clearance, curb spacing and drains |
 | `work.html` | Past projects |
 
 Nav + footer are shared from `js/layout.js`. Anything attached on one page (a design, render, ballpark, claim check) is carried to the lead form on the home page through `sessionStorage`.
@@ -66,6 +67,9 @@ Railway variables (all optional):
 - `COUNTY_GIS_URL`: your county's building-footprint layer, an ArcGIS REST URL ending in `/FeatureServer/<n>` or `/MapServer/<n>`. Most county GIS portals publish one.
 
 Esri World Imagery is shown with attribution. For heavy commercial use, create a free ArcGIS Location Platform account, or set the Google key to use Google imagery instead.
+
+## CAD builder
+The plan for the building designer / blueprint maker is in [`docs/cad-builder-plan.md`](docs/cad-builder-plan.md).
 
 ## Lead form
 `js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.

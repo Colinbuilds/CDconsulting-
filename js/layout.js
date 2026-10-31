@@ -12,6 +12,7 @@
   const LINKS = [
     ["design", "design.html", "Design"],
     ["estimate", "estimate.html", "Estimate"],
+    ["commercial", "commercial.html", "Commercial"],
     ["insurance", "insurance.html", "Insurance"],
     ["checklist", "checklist.html", "Checklist"],
     ["work", "work.html", "Work"],

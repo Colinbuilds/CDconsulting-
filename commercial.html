@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Commercial flat roofs | CD Consulting</title>
+  <meta name="description" content="Plan a commercial flat roof in 3D: choose TPO, PVC, EPDM or modified bitumen, place rooftop units, exhaust fans, skylights and solar, and see what it takes to make the layout work." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+    { "imports": { "three": "./js/vendor/three/three.module.min.js", "three/addons/": "./js/vendor/three/addons/" } }
+  </script>
+</head>
+<body data-page="commercial">
+  <script src="js/layout.js"></script>
+
+  <main>
+    <!-- ============ COMMERCIAL ROOF PLANNER ============ -->
+    <section class="section commercial" id="commercial" aria-labelledby="cm-title">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="label">Commercial · flat roofs</p>
+          <h1 id="cm-title">Plan the roof <em>before the crane comes.</em></h1>
+          <p class="sec-sub">Pick the roof membrane, then place rooftop units, exhaust fans, skylights, solar and more. The planner checks edge clearance, curb spacing and drains as you go, so you can see how the layout would really work.</p>
+        </header>
+
+        <div class="cm">
+          <div class="cm-stage">
+            <canvas id="cmCanvas" aria-label="3D commercial building. Drag to orbit, click equipment to move it."></canvas>
+            <div class="cm-loading" id="cmLoading">Loading the building…</div>
+            <div class="cm-views">
+              <button type="button" class="chip" data-view="aerial">Aerial</button>
+              <button type="button" class="chip" data-view="street">Street</button>
+              <button type="button" class="chip" data-view="top">Top down</button>
+            </div>
+            <p class="cm-hint" id="cmHint">Drag to orbit · scroll to zoom · click equipment to select and drag it</p>
+          </div>
+
+          <aside class="cm-side">
+            <div class="cm-block">
+              <h2>Add to the roof</h2>
+              <p class="cm-sub">Click an item, then click the roof to place it.</p>
+              <div class="cm-items" id="cmItems"></div>
+            </div>
+
+            <div class="cm-block cm-selected" id="cmSel" hidden>
+              <h3 id="cmSelName"></h3>
+              <p id="cmSelNote"></p>
+              <div class="cm-row">
+                <button type="button" class="btn btn-ghost btn-sm" id="cmRotate">Rotate (R)</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="cmDelete">Remove</button>
+              </div>
+            </div>
+
+            <div class="cm-block">
+              <h2>Roof check</h2>
+              <dl class="cm-counts" id="cmCounts"></dl>
+              <ul class="cm-checks" id="cmChecks"></ul>
+            </div>
+
+            <div class="cm-block">
+              <h2>Roof system</h2>
+              <div class="cm-opt"><span>Membrane</span><div class="cm-chips" id="cmMembrane"></div><p class="cm-sub" id="cmMemNote"></p></div>
+              <label class="cm-opt"><span>Parapet height</span>
+                <select id="cmParapet"><option value="2">24 in</option><option value="3.5" selected>42 in (counts as a guardrail)</option><option value="1.5">18 in</option></select>
+              </label>
+              <div class="cm-opt"><span>Walls</span><div class="cm-chips" id="cmWall"></div></div>
+              <div class="cm-opt"><span>Coping</span><div class="cm-chips" id="cmCoping"></div></div>
+              <div class="cm-opt cm-size"><span>Building size (ft)</span>
+                <label>Width <input type="number" id="cmW" min="40" max="300" step="10" inputmode="numeric" /></label>
+                <label>Depth <input type="number" id="cmD" min="40" max="300" step="10" inputmode="numeric" /></label>
+              </div>
+            </div>
+
+            <div class="cm-row">
+              <button type="button" class="btn btn-ghost btn-sm" id="cmReset">Starter layout</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="cmClear">Clear the roof</button>
+            </div>
+            <button type="button" class="btn btn-blue btn-block" id="cmSend">Send this layout to Colin</button>
+            <p class="fine">Planning tool only. Structural loads, code clearances and manufacturer requirements are confirmed by a site survey and the equipment engineer.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script type="module" src="js/commercial3d.js"></script>
+</body>
+</html>
