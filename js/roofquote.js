@@ -159,6 +159,8 @@
     $("#rqStep2").className = s === "mark" ? "" : "is-on";
     $("#rqTools").hidden = s === "mark";
     $("#rqUndo").hidden = s !== "draw";
+    $("#rqRedraw").hidden = s !== "draw";
+    $("#rqTools").hidden = s === "mark" || s === "lookup" || s === "tracing";
     $("#rqMap").classList.toggle("is-marking", s === "mark" || s === "draw");
     read();
   }
@@ -182,11 +184,16 @@
         roof = null;
       }
       if (roof?.outline && !roof.box) {
-        await log.done("Outline found: check the corners");
-        loadShape(roof.outline.map(([la, lo]) => L.latLng(la, lo)), roof.source);
-        map.fitBounds(shape.layer.getBounds(), { padding: innerWidth < 640 ? [36, 36] : [70, 70], maxZoom: 21 });
+        const pts = roof.outline.map(([la, lo]) => L.latLng(la, lo));
+        if (pts.length > 1 && pts[0].equals(pts[pts.length - 1])) pts.pop();
+        map.fitBounds(L.latLngBounds(pts), { padding: innerWidth < 640 ? [36, 36] : [70, 70], maxZoom: 21, animate: false });
+        log.add("Tracing the roof outline…", "run");
+        await autoTrace(pts);
+        log.add(`Traced ${pts.length} corners`, "ok");
+        await log.done("Your roof is traced");
+        loadShape(pts, roof.source);
       } else {
-        await log.done("Trace your roof by hand");
+        await log.done("No outline on record here");
         clearShape();
         setStage("draw");
       }
@@ -196,7 +203,47 @@
     }
   }
 
-  /* ---------- step 2: polygon trace tool ---------- */
+  /* ---------- step 2: the cursor traces the roof on its own ---------- */
+  // a pointer glides corner to corner, drawing the outline and its edge lengths as it goes
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function autoTrace(pts) {
+    clearShape();
+    setStage("tracing");
+    const cursor = L.marker(pts[0], { interactive: false, zIndexOffset: 1000, icon: L.divIcon({ className: "rq-cursor", iconSize: [26, 26], iconAnchor: [3, 2],
+      html: '<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M3 2 21 13l-8 1.6L9.5 23z"/></svg><span>Tracing</span>' }) }).addTo(map);
+    const line = L.polyline([pts[0]], { className: "rq-poly is-open is-tracing" }).addTo(map);
+    const dots = L.layerGroup().addTo(map);
+    const dot = (p) => dots.addLayer(L.marker(p, { interactive: false, icon: L.divIcon({ className: "rq-v is-new", iconSize: [14, 14] }) }));
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    dot(pts[0]);
+    await wait(reduce ? 0 : 350);
+    const total = pts.reduce((s, p, i) => s + feet(p, pts[(i + 1) % pts.length]), 0);
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      // whole trace takes about 3-4 s; every edge gets at least a short glide
+      const ms = reduce ? 0 : Math.max(140, (feet(a, b) / total) * 3200);
+      const t0 = performance.now();
+      const done = line.getLatLngs().slice();
+      await new Promise((res) => {
+        const step = (now) => {
+          const k = ms ? Math.min(1, (now - t0) / ms) : 1, e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+          const p = L.latLng(a.lat + (b.lat - a.lat) * e, a.lng + (b.lng - a.lng) * e);
+          cursor.setLatLng(p);
+          line.setLatLngs([...done, p]);
+          if (k < 1) requestAnimationFrame(step); else res();
+        };
+        requestAnimationFrame(step);
+      });
+      const len = Math.round(feet(a, b));
+      if (len >= 8) dots.addLayer(L.marker(L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2), { interactive: false, icon: L.divIcon({ className: "rq-len is-new", html: `<span>${len} ft</span>`, iconSize: null }) }));
+      if (i < pts.length - 1) dot(b);
+    }
+    cursor.getElement()?.classList.add("is-done");
+    await wait(reduce ? 0 : 600);
+    cursor.remove(); line.remove(); dots.remove();
+  }
+
+  /* ---------- the traced outline: corners can still be nudged if one is off ---------- */
   function clearShape() {
     shape.pts = []; shape.closed = false; shape.from = null;
     if (shape.layer) { shape.layer.remove(); shape.layer = null; }
@@ -257,11 +304,13 @@
     $("#rqRead").innerHTML =
       stage === "mark" ? "Click on your house" :
       stage === "lookup" ? "Looking up the building…" :
+      stage === "tracing" ? "Tracing your roof…" :
       !ready ? `Click each corner of your roof · ${shape.pts.length} placed${shape.pts.length >= 3 ? " · click the first corner to finish" : ""}` :
       `<b>${Math.round(m.area).toLocaleString()} sq ft</b> footprint · ${Math.round(m.perimeter)} ft around`;
-    $("#rqStep2Text").textContent = stage === "draw"
-      ? "Click each corner of your roof, then click the first corner to close the shape. Drag corners to adjust."
-      : "Drag the white corners to the edges of your roof. Drag a length label to add a corner. Right-click a corner to remove it.";
+    $("#rqStep2Text").textContent =
+      stage === "draw" ? "This building isn't in the county records, so click each corner of your roof, then the first corner to close it. Or enter the size by hand."
+      : stage === "edit" ? "Done. Your roof was traced from county building records. If a corner looks off, drag it."
+      : "Your roof is traced automatically from county building records.";
   }
 
   $("#rqRedraw").addEventListener("click", () => { clearShape(); setStage("draw"); });
