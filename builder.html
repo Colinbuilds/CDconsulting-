@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Building designer | CD Consulting</title>
+  <meta name="description" content="Design a home or commercial building: draw walls in real assemblies, add doors, windows, roofs, decks, plumbing, HVAC and electrical, see it in 3D, walk through it, and print a plan set with a materials takeoff." />
+  <meta name="theme-color" content="#0b0c0f" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0c0f'/%3E%3Cpath d='M14 30 32 15 50 30' fill='none' stroke='%233c6cf0' stroke-width='3'/%3E%3Ctext x='32' y='50' font-family='Georgia,serif' font-size='20' fill='%23ecebe6' text-anchor='middle'%3ECD%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+    { "imports": { "three": "./js/vendor/three/three.module.min.js", "three/addons/": "./js/vendor/three/addons/" } }
+  </script>
+</head>
+<body data-page="builder" class="is-app">
+  <script src="js/layout.js"></script>
+
+  <main>
+    <section class="bd" id="builder" data-view="split" aria-label="Building designer">
+      <header class="bd-top">
+        <input class="bd-name" id="bdName" aria-label="Design name" />
+        <span class="bd-saved" id="bdSaved"></span>
+        <div class="bd-group">
+          <button type="button" class="bd-btn" id="bdNew">New</button>
+          <button type="button" class="bd-btn" id="bdOpen">Open</button>
+          <button type="button" class="bd-btn" id="bdExport">Save file</button>
+          <input type="file" id="bdFile" accept=".json,application/json" hidden />
+        </div>
+        <div class="bd-group">
+          <button type="button" class="bd-btn" id="bdUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+          <button type="button" class="bd-btn" id="bdRedo" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>
+        </div>
+        <div class="bd-group bd-views">
+          <button type="button" class="bd-btn" data-view="plan">Plan</button>
+          <button type="button" class="bd-btn" data-view="split">Plan + 3D</button>
+          <button type="button" class="bd-btn" data-view="3d">3D</button>
+        </div>
+        <div class="bd-group bd-right">
+          <button type="button" class="bd-btn" id="bdWalk">Walk through</button>
+          <button type="button" class="bd-btn" id="bdPrintBtn">Prints</button>
+          <button type="button" class="btn btn-blue btn-sm" id="bdSend">Send to Colin</button>
+        </div>
+      </header>
+
+      <aside class="bd-left">
+        <div class="bd-tools" id="bdTools"></div>
+        <h2 class="bd-h">Add</h2>
+        <div id="bdCatalog"></div>
+      </aside>
+
+      <div class="bd-main">
+        <div class="bd-levels" id="bdLevels"></div>
+        <div class="bd-toolopts" id="bdToolOpts"></div>
+        <div class="bd-panes">
+          <div class="bd-plan-wrap">
+            <svg class="bd-plan" id="bdPlan" aria-label="Floor plan editor"></svg>
+            <div class="bd-planbar">
+              <label>Grid <select id="bdGrid"><option value="0.5" selected>6 in</option><option value="1">1 ft</option><option value="0.25">3 in</option><option value="2">2 ft</option></select></label>
+              <label><input type="checkbox" data-layer="dims" checked /> Dimensions</label>
+              <label><input type="checkbox" data-layer="furniture" checked /> Furniture</label>
+              <label><input type="checkbox" data-layer="plumbing" checked /> Plumbing</label>
+              <label><input type="checkbox" data-layer="hvac" checked /> HVAC</label>
+              <label><input type="checkbox" data-layer="electrical" checked /> Electrical</label>
+              <label><input type="checkbox" data-layer="roof" checked /> Roof</label>
+            </div>
+          </div>
+          <div class="bd-3d-wrap">
+            <canvas class="bd-3d" id="bd3d" aria-label="3D model. Drag to orbit, scroll to zoom, click to select."></canvas>
+            <div class="bd-3dbar">
+              <button type="button" class="chip" data-cam="front">Front</button>
+              <button type="button" class="chip" data-cam="back">Back</button>
+              <button type="button" class="chip" data-cam="top">Top</button>
+              <button type="button" class="chip" id="bdXray">See systems</button>
+            </div>
+            <div class="bd-walkhelp" id="bdWalkHelp"><b>Walk-through</b><span>Click here to look around · W A S D to move · Shift to run · walk onto stairs to go up · Esc to pause</span><button type="button" class="btn btn-ghost btn-sm" id="bdWalkExit">Exit walk-through</button></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="bd-inspect" id="bdInspect" aria-label="Properties"></aside>
+      <p class="bd-mobile" id="bdMobile" hidden>The designer works best on a computer with a mouse. On a phone you can look around the 3D model.</p>
+      <div class="bd-toast" id="bdToast" role="status"></div>
+    </section>
+
+    <dialog class="bd-dlg" id="bdNewDlg">
+      <h2>Start a new design</h2>
+      <p>Your current design stays in "Save file" if you want to keep it.</p>
+      <div class="bd-templates">
+        <button type="button" data-template="blank"><b>Blank</b><span>Start from nothing</span></button>
+        <button type="button" data-template="ranch"><b>Ranch home</b><span>3 bed, 1,440 sq ft, gable roof</span></button>
+        <button type="button" data-template="twostory"><b>Two-story home</b><span>2 floors, stairs, hip roof</span></button>
+        <button type="button" data-template="commercial"><b>Commercial</b><span>Retail box, CMU + storefront, flat roof</span></button>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" data-close>Cancel</button>
+    </dialog>
+
+    <dialog class="bd-prints" id="bdPrints">
+      <div class="bd-printbar">
+        <b>Print set</b>
+        <span>Print on letter paper, landscape. Choose "Save as PDF" to get a file.</span>
+        <button type="button" class="btn btn-blue btn-sm" id="bdDoPrint">Print / Save PDF</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="bdClosePrints">Close</button>
+      </div>
+      <div class="bd-sheets" id="bdSheets"></div>
+    </dialog>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+  <script type="module" src="js/builder/app.js"></script>
+</body>
+</html>

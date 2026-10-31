@@ -68,28 +68,26 @@
                     <span>Straight-on, in daylight, works best</span>
                   </label>
                   <canvas id="photoCanvas" hidden></canvas>
-                  <div class="brush-cursor" id="brushCursor" hidden></div>
+                  <div class="photo-busy" id="photoBusy" hidden>
+                    <div class="photo-busy-card"><b id="photoBusyStep">Finding your roof and siding…</b><i><b id="photoBusyBar"></b></i><small id="photoBusyNote">First time only: downloading the 29 MB detector. After that it's instant.</small></div>
+                  </div>
+                  <div class="photo-fix" id="photoFix" hidden>
+                    <span>This area is:</span>
+                    <button type="button" class="chip" data-fix="roof">Roof</button>
+                    <button type="button" class="chip" data-fix="siding">Siding</button>
+                    <button type="button" class="chip" data-fix="trim">Trim</button>
+                    <button type="button" class="chip" data-fix="door">Door</button>
+                    <button type="button" class="chip" data-fix="none">Leave as is</button>
+                  </div>
                 </div>
                 <div class="stage-foot photo-tools" id="photoTools" hidden>
-                  <div class="tool-group" role="group" aria-label="Zone to paint">
-                    <span>Paint</span>
-                    <button class="chip is-on" data-zone="roof">Roof</button>
-                    <button class="chip" data-zone="siding">Siding</button>
-                    <button class="chip" data-zone="trim">Trim</button>
-                    <button class="chip" data-zone="door">Door</button>
-                  </div>
+                  <div class="tool-group" id="photoFound" aria-live="polite"></div>
                   <div class="tool-group">
-                    <button class="chip" id="eraserBtn">Eraser</button>
-                    <label class="range">Brush <input type="range" id="brushSize" min="6" max="120" value="40"/></label>
-                    <label class="range">Strength <input type="range" id="strength" min="20" max="100" value="80"/></label>
-                  </div>
-                  <div class="tool-group">
-                    <button class="chip" id="maskBtn">Show mask</button>
+                    <button class="chip" id="maskBtn" aria-pressed="false">Show detected areas</button>
                     <button class="chip" id="compareBtn">Hold: original</button>
-                    <button class="chip" id="clearZoneBtn">Clear zone</button>
                     <button class="chip" id="newPhotoBtn">New photo</button>
                   </div>
-                  <p class="hint">Brush over the roof, then switch zones and paint the siding, trim or door. Colors from the panel apply live.</p>
+                  <p class="hint">Roof, siding, trim and doors are found automatically. Pick colors above to change them. If an area is wrong, click it on the photo and choose what it is.</p>
                 </div>
               </div>
             </div>

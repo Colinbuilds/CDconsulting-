@@ -94,7 +94,10 @@
 
   const idOf = (l, g, i) => `${l.id}-${g.trade}-${i}`;
   function render() {
-    root.innerHTML = LISTS.map((l) => {
+    const S = window.SITE || {};
+    root.innerHTML = `<div class="cl-print-head"><b>${S.brand || "CD Consulting"} · Homeowner checklist${filter === "all" ? "" : " · " + filter}</b>
+      <span>Name ______________________ Install day __________</span>
+      <span>When it's done, text a photo of this sheet to ${S.phone || "your consultant"} or upload it at ${location.host}/checklist.html</span></div>` + LISTS.map((l) => {
       const groups = l.groups.filter((g) => filter === "all" || g.trade === "all" || g.trade === filter);
       if (!groups.length) return "";
       return `
@@ -136,6 +139,136 @@
     render();
   });
   $("#clReset").addEventListener("click", () => { done = {}; save(); render(); });
+
+  /* ---------- send it to a to-do app ---------- */
+  const SITE = window.SITE || {};
+  const visible = () => LISTS.flatMap((l) => l.groups
+    .filter((g) => filter === "all" || g.trade === "all" || g.trade === filter)
+    .flatMap((g) => g.items.map(([t, why], i) => ({ list: l.title, group: g.name, t, why, id: idOf(l, g, i) }))))
+    .filter((x) => !done[x.id]);
+  const title = () => `${filter === "all" ? "Project" : filter[0].toUpperCase() + filter.slice(1)} prep · ${SITE.brand || "CD Consulting"}`;
+  const say = (t) => { $("#clAddMsg").textContent = t; };
+  function download(name, type, text) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+
+  $("#clAdd").addEventListener("click", (e) => {
+    const p = $("#clAddPanel"), open = p.hidden;
+    p.hidden = !open;
+    e.currentTarget.setAttribute("aria-expanded", open);
+    if (open) p.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  // one task per line: pasting this into Apple Reminders makes one reminder per line
+  $("#clCopy").addEventListener("click", async () => {
+    const text = visible().map((x) => x.t).join("\n");
+    try { await navigator.clipboard.writeText(text); say(`Copied ${visible().length} tasks. Now paste them into a Reminders list.`); }
+    catch { prompt("Copy these tasks:", text); }
+  });
+  $("#clShare").addEventListener("click", async () => {
+    const text = visible().map((x) => "☐ " + x.t).join("\n");
+    if (navigator.share) { try { await navigator.share({ title: title(), text }); } catch {} }
+    else { try { await navigator.clipboard.writeText(text); say("Sharing isn't available here, so the list was copied instead."); } catch { prompt("Copy these tasks:", text); } }
+  });
+  // Todoist's CSV template import (Settings → Import from template)
+  $("#clCsv").addEventListener("click", () => {
+    const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [["TYPE", "CONTENT", "DESCRIPTION", "PRIORITY", "INDENT"].join(",")];
+    let section = "";
+    for (const x of visible()) {
+      if (x.list !== section) { section = x.list; rows.push(["section", q(section), "", "", ""].join(",")); }
+      rows.push(["task", q(x.t), q(x.why), 4, 1].join(","));
+    }
+    download("checklist-todoist.csv", "text/csv", rows.join("\r\n"));
+    say("Saved. In Todoist: open a project → ⋯ → Import from template → choose this file.");
+  });
+  // calendar file: prep the week before, cars out the night before, walk-through the day after
+  $("#clIcs").addEventListener("click", () => {
+    const v = $("#clDate").value;
+    if (!v) { say("Pick your install day first."); $("#clDate").focus(); return; }
+    const day = new Date(v + "T12:00:00");
+    const ymd = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    const shift = (n) => { const d = new Date(day); d.setDate(d.getDate() + n); return d; };
+    const esc = (t) => t.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
+    const items = visible();
+    const prep = items.filter((x) => x.list === "Before install day").map((x) => "• " + x.t).join("\n");
+    const after = items.filter((x) => /After/.test(x.list)).slice(0, 8).map((x) => "• " + x.t).join("\n");
+    const ev = (n, summary, desc, alarm) => [
+      "BEGIN:VEVENT", `UID:${ymd(shift(n))}-${n}@cdconsulting`, `DTSTAMP:${ymd(new Date())}T000000Z`,
+      `DTSTART;VALUE=DATE:${ymd(shift(n))}`, `DTEND;VALUE=DATE:${ymd(shift(n + 1))}`,
+      `SUMMARY:${esc(summary)}`, `DESCRIPTION:${esc(desc)}`,
+      "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${esc(summary)}`, `TRIGGER:${alarm}`, "END:VALARM", "END:VEVENT"];
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CD Consulting//Homeowner checklist//EN", "CALSCALE:GREGORIAN",
+      ...ev(-7, "Start your project prep checklist", prep || "Open the checklist on the website.", "PT9H"),
+      ...ev(-1, "Install tomorrow: cars out of the garage and driveway tonight", "Move cars, pets inside in the morning, gates unlocked.\n\n" + prep, "PT17H"),
+      ...ev(0, "Install day", "Crew arrives today. Use another door if one is under the work area.", "PT7H"),
+      ...ev(1, "Walk-through, then send a photo of your finished checklist", after + "\n\nSend your photo: " + location.origin + "/checklist.html#clDone", "PT10H"),
+      "END:VCALENDAR"];
+    download("project-checklist.ics", "text/calendar", lines.join("\r\n"));
+    say("Saved. Open the file to add the reminders to your calendar.");
+  });
+
+  /* ---------- done: send a photo ---------- */
+  const form = $("#clForm"), msg = $("#clMsg");
+  const photos = [];
+  const sayForm = (t, kind = "") => { msg.textContent = t; msg.className = "form-msg mono " + kind; };
+  async function shrink(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return await new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
+    } catch { return null; } finally { URL.revokeObjectURL(url); }
+  }
+  function thumbs() {
+    $("#clThumbs").innerHTML = photos.map((p, i) => `<div class="thumb"><img src="${p.url}" alt="Photo ${i + 1}"><button type="button" data-i="${i}" aria-label="Remove photo ${i + 1}">✕</button></div>`).join("");
+  }
+  $("#clPhotos").addEventListener("change", async (e) => {
+    for (const f of [...e.target.files].filter((f) => f.type.startsWith("image/"))) {
+      if (photos.length >= 6) break;
+      const blob = await shrink(f);
+      if (blob) photos.push({ blob, url: URL.createObjectURL(blob) });
+    }
+    e.target.value = "";
+    thumbs();
+  });
+  $("#clThumbs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-i]");
+    if (!b) return;
+    URL.revokeObjectURL(photos[+b.dataset.i].url);
+    photos.splice(+b.dataset.i, 1);
+    thumbs();
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = form.elements;
+    const bad = ["name", "phone", "email"].filter((n) => !f[n].value.trim() || (n === "email" && !/^\S+@\S+\.\S+$/.test(f[n].value)));
+    ["name", "phone", "email"].forEach((n) => f[n].closest(".field").classList.toggle("invalid", bad.includes(n)));
+    if (bad.length) return sayForm("Name, phone and a valid email are required.", "err");
+    if (!photos.length) return sayForm("Add at least one photo.", "err");
+    const all = [...root.querySelectorAll("input[data-id]")], n = all.filter((b) => b.checked).length;
+    const fd = new FormData(form);
+    fd.set("interest", "Checklist complete");
+    fd.set("message", `Homeowner checklist: ${n} of ${all.length} done (${filter === "all" ? "everything" : filter}).` +
+      (n < all.length ? ` Still open: ${visible().slice(0, 12).map((x) => x.t).join(" / ")}` : ""));
+    photos.forEach((p, i) => fd.append(`photo${i + 1}`, p.blob, `checklist${i + 1}.jpg`));
+    $("#clSend").disabled = true;
+    sayForm("Sending…");
+    try {
+      const r = await fetch(SITE.formEndpoint || "/api/lead", { method: "POST", body: fd, headers: { Accept: "application/json" } });
+      if (!r.ok) throw new Error(r.status);
+      form.innerHTML = `<div class="sent"><div class="ok-mark">✓</div><h3>Got it, thanks!</h3><p>I'll look over your photos before the crew arrives.</p></div>`;
+    } catch {
+      $("#clSend").disabled = false;
+      sayForm(`Couldn't send right now. Please text your photo to ${SITE.phone || "me"}.`, "err");
+    }
+  });
   $("#clPrint").addEventListener("click", () => print());
   syncChips();
   render();
