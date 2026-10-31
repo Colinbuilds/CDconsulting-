@@ -54,6 +54,10 @@ section.innerHTML = `
     </dl>
     <aside class="pr-panel">
       <article class="pr-card" aria-live="polite"></article>
+      <div class="pr-nav">
+        <button type="button" class="btn btn-ghost btn-sm" data-step="-1" aria-label="Previous step">← Back</button>
+        <button type="button" class="btn btn-blue btn-sm" data-step="1">Next step →</button>
+      </div>
       <div class="pr-cta">
         ${gated
           ? `<a href="#home" class="btn btn-blue btn-sm" data-unlock="home">Enter the site</a><a href="#trades" class="btn btn-ghost btn-sm" data-unlock="trades">Pick a trade</a>`
@@ -61,18 +65,18 @@ section.innerHTML = `
       </div>
     </aside>
     <div class="pr-foot">
-      <ol class="pr-phases">${cfg.phases.map(([n]) => `<li>${n}</li>`).join("")}</ol>
-      <div class="pr-progress"><span class="pr-phase-label"></span><i><b></b></i><span class="pr-pct">0%</span></div>
+      <ol class="pr-phases">${cfg.phases.map(([n], i) => `<li><button type="button" data-phase="${i}">${n}</button></li>`).join("")}</ol>
+      <div class="pr-progress"><span class="pr-phase-label"></span><i role="slider" tabindex="0" aria-label="Jump to any point in the job" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b></b></i><span class="pr-pct">0%</span></div>
       <input type="range" class="pr-range" min="0" max="1000" value="0" aria-label="Walkthrough progress" hidden />
     </div>
     <div class="pr-loading"><span>Building the 3D house</span><i><b></b></i></div>
-    <div class="pr-hint">Scroll <span>↓</span></div>
+    <div class="pr-hint">Click <b>Next step</b> or scroll <span>↓</span></div>
   </div>`;
 const $ = (s) => section.querySelector(s);
 const canvas = $(".pr-canvas"), labels = $(".pr-labels"), card = $(".pr-card");
 const ui = {
   phases: [...section.querySelectorAll(".pr-phases li")], label: $(".pr-phase-label"), pct: $(".pr-pct"),
-  bar: $(".pr-progress b"), hint: $(".pr-hint"), load: $(".pr-loading b"),
+  bar: $(".pr-progress b"), track: $(".pr-progress i"), back: $('[data-step="-1"]'), fwd: $('[data-step="1"]'), hint: $(".pr-hint"), load: $(".pr-loading b"),
   read: Object.fromEntries([...section.querySelectorAll("[data-r]")].map((el) => [el.dataset.r, el])),
 };
 
@@ -195,7 +199,7 @@ function hud() {
   if (s !== lastCard) {
     lastCard = s;
     if (!s) {
-      card.innerHTML = `<p class="pr-k mono">${cfg.title} · ${STEPS.length} steps</p><h3>Scroll to start the job.</h3><p>Every material is labeled as it goes on, in the order a pro installs it.</p>`;
+      card.innerHTML = `<p class="pr-k mono">${cfg.title} · ${STEPS.length} steps</p><h3>Click Next to start the job.</h3><p>Every material is labeled as it goes on, in the order a pro installs it. You can also scroll, or click anywhere on the bar below to jump.</p>`;
     } else {
       const m = s.m;
       card.innerHTML = `
@@ -209,6 +213,10 @@ function hud() {
     }
   }
   ui.pct.textContent = Math.round(P * 100) + "%";
+  ui.track.setAttribute("aria-valuenow", Math.round(P * 100));
+  ui.back.disabled = P < 0.005;
+  ui.fwd.textContent = !nextStop() ? "Finished ✓" : s ? "Next step →" : "Start →";
+  ui.fwd.disabled = !nextStop();
   ui.bar.style.width = P * 100 + "%";
   let day = cfg.days[0][1];
   for (const [at, d] of cfg.days) if (P >= at) day = d;
@@ -261,6 +269,63 @@ if (list) {
       </div>
     </details>`).join("");
 }
+
+/* ---------- click-through: Next / Back, phase tabs, a clickable progress bar, arrow keys ---------- */
+// each step's resting point: partway into it, before the next one starts
+const STOPS = STEPS.map((st, i) => {
+  const end = Math.min(st.at[1], STEPS[i + 1]?.at[0] ?? 1);
+  return clamp(st.at[0] + Math.max(0.006, (end - st.at[0]) * 0.55));
+});
+STOPS.push(1); // the finished house
+const nextStop = () => STOPS.find((p) => p > P + 0.004);
+const prevStop = () => [0, ...STOPS].reverse().find((p) => p < P - 0.004) ?? 0;
+
+let tween = 0;
+// move through the job: the page scrolls, so the build animates exactly as it does when scrolling
+function goTo(target) {
+  target = clamp(target);
+  if (reduced) { P = target; hud(); request(); return; }
+  const span = section.offsetHeight - innerHeight, top = section.getBoundingClientRect().top + scrollY;
+  const from = scrollY, to = top + target * span, dur = Math.min(1400, 450 + Math.abs(to - from) / span * 2600);
+  const t0 = performance.now(), id = ++tween;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+  const step = (now) => {
+    if (id !== tween) return;
+    const k = Math.min(1, (now - t0) / dur);
+    window.scrollTo({ top: from + (to - from) * ease(k), behavior: "instant" });
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+addEventListener("wheel", () => tween++, { passive: true }); // the visitor took over
+addEventListener("touchstart", () => tween++, { passive: true });
+
+section.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-step],[data-phase]");
+  if (!b) return;
+  if (b.dataset.step) goTo(b.dataset.step === "1" ? nextStop() ?? 1 : prevStop());
+  else goTo(cfg.phases[+b.dataset.phase][1] + 0.004);
+});
+// the progress bar: click or drag anywhere to jump
+let dragging = false;
+const seek = (e) => {
+  const r = ui.track.getBoundingClientRect();
+  const k = clamp((e.clientX - r.left) / r.width);
+  if (dragging === "drag") { const span = section.offsetHeight - innerHeight; tween++; window.scrollTo({ top: section.getBoundingClientRect().top + scrollY + k * span, behavior: "instant" }); }
+  else goTo(k);
+};
+ui.track.addEventListener("pointerdown", (e) => { dragging = "down"; ui.track.setPointerCapture(e.pointerId); seek(e); });
+ui.track.addEventListener("pointermove", (e) => { if (dragging) { dragging = "drag"; seek(e); } });
+ui.track.addEventListener("pointerup", () => { dragging = false; });
+ui.track.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") { e.preventDefault(); goTo(P + 0.02); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); goTo(P - 0.02); }
+});
+addEventListener("keydown", (e) => {
+  if (section.dataset.pin !== "on" || /input|select|textarea/i.test(e.target.tagName) || e.target === ui.track) return;
+  if (e.key === "ArrowRight") { e.preventDefault(); goTo(nextStop() ?? 1); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); goTo(prevStop()); }
+});
 
 /* ---------- pin + drive ---------- */
 const nav = document.querySelector(".nav");

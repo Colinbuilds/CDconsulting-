@@ -34,15 +34,68 @@
           </div>
           <div class="cl-progress"><span id="clCount">0 done</span><i><b id="clBar"></b></i></div>
           <div class="cl-actions">
-            <button class="btn btn-ghost btn-sm" id="clPrint" type="button">Print</button>
+            <button class="btn btn-blue btn-sm" id="clAdd" type="button" aria-expanded="false" aria-controls="clAddPanel">Add to my to-do app</button>
+            <button class="btn btn-ghost btn-sm" id="clPrint" type="button">Print (1 page)</button>
             <button class="btn btn-ghost btn-sm" id="clReset" type="button">Clear ticks</button>
           </div>
         </div>
-        <div class="cl-lists" id="checklist"></div>
-        <div class="cl-cta">
-          <h2>Questions about <em>your</em> project?</h2>
-          <a href="index.html#contact" class="btn btn-blue">Ask me</a>
+
+        <div class="cl-add" id="clAddPanel" hidden>
+          <div>
+            <h3>Apple Reminders <small>iPhone, iPad, Mac</small></h3>
+            <ol>
+              <li>Tap <b>Copy the list</b>.</li>
+              <li>Open <b>Reminders</b> and make a new list, like "Roof prep".</li>
+              <li>Tap a new reminder and <b>Paste</b>. Every line becomes its own reminder.</li>
+            </ol>
+            <button class="btn btn-blue btn-sm" id="clCopy" type="button">Copy the list</button>
+          </div>
+          <div>
+            <h3>Google Tasks, Microsoft To Do, Todoist <small>any phone</small></h3>
+            <p>Copy the list and paste it into a new list, or share it straight to the app.</p>
+            <div class="cl-add-btns">
+              <button class="btn btn-ghost btn-sm" id="clShare" type="button">Share…</button>
+              <button class="btn btn-ghost btn-sm" id="clCsv" type="button">Todoist file (.csv)</button>
+            </div>
+          </div>
+          <div>
+            <h3>Calendar reminders <small>Apple, Google, Outlook</small></h3>
+            <p>Pick your install day and get reminders the week before, the night before and the day after.</p>
+            <div class="cl-add-btns">
+              <input type="date" id="clDate" aria-label="Install day" />
+              <button class="btn btn-ghost btn-sm" id="clIcs" type="button">Add to calendar (.ics)</button>
+            </div>
+          </div>
+          <p class="cl-add-note" id="clAddMsg" role="status"></p>
         </div>
+        <div class="cl-lists" id="checklist"></div>
+        <section class="cl-done" id="clDone" aria-labelledby="cl-done-title">
+          <div>
+            <p class="label">Last step</p>
+            <h2 id="cl-done-title">All done? <em>Send me a photo.</em></h2>
+            <p>When your list is finished, take a photo of the cleared driveway, the attic covered, or your printed checklist, and send it here. I'll check it before the crew arrives.</p>
+          </div>
+          <form class="cl-photo-form" id="clForm" novalidate>
+            <p class="hp"><label>Leave empty <input name="company_url" tabindex="-1" autocomplete="off" /></label></p>
+            <div class="form-grid">
+              <label class="field"><span>Name *</span><input name="name" required autocomplete="name" /></label>
+              <label class="field"><span>Phone *</span><input name="phone" type="tel" required autocomplete="tel" /></label>
+              <label class="field"><span>Email *</span><input name="email" type="email" required autocomplete="email" /></label>
+              <label class="field"><span>Job address</span><input name="address" autocomplete="street-address" /></label>
+            </div>
+            <div class="field">
+              <span>Photos (up to 6)</span>
+              <label class="upload">
+                <input type="file" id="clPhotos" accept="image/*" multiple />
+                <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="12" width="36" height="26" rx="3"/><circle cx="24" cy="25" r="7"/><path d="M16 12l3-5h10l3 5"/></svg>
+                <span><b>Take or add photos</b></span>
+              </label>
+              <div class="thumbs" id="clThumbs"></div>
+            </div>
+            <button class="btn btn-blue btn-block" type="submit" id="clSend">Send my checklist photo</button>
+            <p class="form-msg" id="clMsg" role="status"></p>
+          </form>
+        </section>
       </div>
     </section>
   </main>
