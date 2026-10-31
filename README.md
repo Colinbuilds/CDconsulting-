@@ -8,7 +8,7 @@ Static site plus a tiny Node server (`server.js`) for the lead form. No build st
 | `index.html` | Full-screen 3D walkthrough of a full roof + siding job (the rest of the page unlocks once it's scrolled through), then who I am + what I do, About, and the lead form |
 | `roofing.html`, `siding.html`, `windows.html`, `gutters.html` | A full-screen 3D walkthrough of that trade, every step explained, then a checklist link and CTA |
 | `design.html` | 3D exterior designer + paint-your-photo |
-| `estimate.html` | Ballpark estimator |
+| `estimate.html` | Roof price by address (find the house, confirm it on an aerial photo, measure the roof, price three shingle lines with tax), plus the ballpark estimator for other work |
 | `insurance.html` | Insurance claims guide + "Should I file?" check |
 | `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device, prints) |
 | `work.html` | Past projects |
@@ -22,6 +22,7 @@ Nav + footer are shared from `js/layout.js`. Anything attached on one page (a de
 | Past work (photos + descriptions) | `js/config.js` → `PROJECTS`; drop images in `images/projects/` |
 | Your portrait | save as `images/colin.jpg`, then swap the placeholder in the About section of `index.html` |
 | Homeowner checklist items | `LISTS` in `js/checklist.js` |
+| Roof prices per square, sales tax, waste, overhang, default pitch | `ROOF_PRICING` in `js/config.js` |
 | Track-record numbers (roofs, renders) | `data-count` values in the About section of `index.html` |
 | Estimator pricing | `ITEMS` at the top of `js/estimator.js` (installed $ ranges per unit) |
 
@@ -35,6 +36,36 @@ Nav + footer are shared from `js/layout.js`. Anything attached on one page (a de
    - `LEADS_DIR` (optional) = `/data` if you attach a Railway volume there, to also keep every lead + photos on disk
 
 Every lead also prints to the deploy logs (`NEW LEAD …`), so none are lost before email is set up.
+
+## Roof price by address
+`js/roofquote.js` (estimate page) calls these server routes in `roof-api.js`:
+
+| Route | What it does | Free source | With `GOOGLE_MAPS_API_KEY` |
+|---|---|---|---|
+| `/api/geocode` | Address → location | OpenStreetMap, then the US Census geocoder | Google Geocoding (rooftop accurate) |
+| `/api/roof` | Roof outline + footprint size, streamed step by step to the search window | The county's own GIS (see below), `COUNTY_GIS_URL` if set, then FEMA USA Structures (every US building, public domain), then OpenStreetMap | Google Solar API roof scan: measured roof area and pitch |
+| `/api/aerial` | Photo from above | Esri World Imagery | Google satellite |
+| `/api/street` | Photo from the street | (none; a Street View link is shown) | Google Street View |
+
+**County GIS built in** (`gis-counties.js`):
+
+| County | Layer | Buildings |
+|---|---|---|
+| Douglas, NE (Omaha) | [DOGIS 2022 Building Footprints](https://dcgis.org/server/rest/services/Hosted/2022_Building_Footprints/FeatureServer/0) | 268,909 |
+| Sarpy, NE | [Sarpy County Building Footprints](https://geodata.sarpy.gov/arcgis/rest/services/Cadastral/LandRecordsDynamic/MapServer/42) | 79,348 |
+| Lancaster, NE (Lincoln) | [Lincoln–Lancaster 2026 Footprints](https://gis.lincoln.ne.gov/public/rest/services/BuildingSafety/BuildingFootprints/MapServer/8) | 160,473 |
+| Pottawattamie, IA (Council Bluffs) | [Pottawattamie 2024 Building Footprints](https://gis.pottcounty-ia.gov/arcgis/rest/services/Hosted/Building_Footprints_2024/FeatureServer/0) | 74,960 |
+| Cass, NE | No public footprints ([open data](https://gis-cass.hub.arcgis.com) has parcels only), so FEMA USA Structures is used | — |
+
+To add a county, add an entry with its layer URL and a rough bounding box to `gis-counties.js`.
+
+The math: footprint + 1 ft overhang all around → × pitch factor (√(1 + (pitch/12)²); 7/12 by default, the homeowner can change it) → + 8% waste → rounded up to the next ⅓ square → × price per square → + sales tax.
+
+Railway variables (all optional):
+- `GOOGLE_MAPS_API_KEY`: turn on Geocoding, Maps Static, Street View Static and Solar APIs for the key in Google Cloud. It stays on the server; images are proxied.
+- `COUNTY_GIS_URL`: your county's building-footprint layer, an ArcGIS REST URL ending in `/FeatureServer/<n>` or `/MapServer/<n>`. Most county GIS portals publish one.
+
+Esri World Imagery is shown with attribution. For heavy commercial use, create a free ArcGIS Location Platform account, or set the Google key to use Google imagery instead.
 
 ## Lead form
 `js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.
