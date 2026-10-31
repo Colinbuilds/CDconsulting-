@@ -233,18 +233,21 @@ const View = (() => {
   return { apply, snapshot, isReady: () => ready };
 })();
 
-/* ---------------------------------------------------------------- PHOTO MODE */
+/* ---------------------------------------------------------------- PHOTO MODE
+   The roof, siding, trim and doors are found automatically (js/photo-detect.js); the colors chosen
+   in the panel recolor them while keeping the photo's own light, shadow and texture. If an area is
+   wrong, click it and pick what it really is. */
 const Photo = (() => {
   const canvas = $("#photoCanvas");
-  const ctx = canvas.getContext("2d");
-  const stageEl = $("#photoStage"), cursor = $("#brushCursor"), input = $("#photoInput"), drop = $("#dropzone");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const input = $("#photoInput"), drop = $("#dropzone");
   const ZONES = ["roof", "siding", "trim", "door"];
-  const TINT = { roof: "47,107,255", siding: "0,220,170", trim: "255,200,0", door: "255,70,140" };
-  let base = null, masks = {}, painted = {}, tmp = null;
-  let zone = "roof", erasing = false, showMask = false, original = false;
-  let brush = 40, strength = 0.8, drawing = false, last = null, queued = false;
+  const TINT = { roof: [47, 107, 255], siding: [0, 200, 150], trim: [255, 196, 0], door: [255, 70, 140] };
+  let base = null, basePx = null, det = null, alpha = {}, meanLum = {}, showMask = false, original = false, queued = false, busy = false, fixAt = null;
   const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
   const colorFor = (z) => hexOf(z, design[z]) || "#888888";
+  const rgb = (hex) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const lumOf = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
   async function load(file) {
     if (!file || !file.type.startsWith("image/")) return;
@@ -253,94 +256,131 @@ const Photo = (() => {
     try { await img.decode(); } catch { toast("Couldn't read that image. Try a JPG or PNG."); return; }
     const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
     const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
-    base = mk(w, h); base.getContext("2d").drawImage(img, 0, 0, w, h);
+    base = mk(w, h);
+    const bctx = base.getContext("2d", { willReadFrequently: true });
+    bctx.drawImage(img, 0, 0, w, h);
+    basePx = bctx.getImageData(0, 0, w, h).data;
     URL.revokeObjectURL(url);
-    canvas.width = w; canvas.height = h; tmp = mk(w, h);
-    ZONES.forEach((z) => { masks[z] = mk(w, h); painted[z] = false; });
-    drop.hidden = true; canvas.hidden = false; $("#photoTools").hidden = false;
+    canvas.width = w; canvas.height = h;
+    det = null; alpha = {};
+    drop.hidden = true; canvas.hidden = false; $("#photoTools").hidden = false; $("#photoFix").hidden = true;
     $("#vzMode").textContent = `PHOTO ${w}×${h}`;
     render();
+    await runDetect();
   }
+
+  async function runDetect() {
+    busy = true;
+    const box = $("#photoBusy"), step = $("#photoBusyStep"), bar = $("#photoBusyBar");
+    box.hidden = false; bar.style.width = "4%"; step.textContent = "Finding your roof and siding…";
+    $("#photoFound").innerHTML = "";
+    try {
+      const D = await import("./photo-detect.js");
+      det = await D.detect(base, {
+        onStep: (t) => { step.textContent = t; if (!/Loading/.test(t)) $("#photoBusyNote").hidden = true; },
+        onProgress: (k) => { bar.style.width = Math.max(4, Math.round(k * 100)) + "%"; },
+      });
+      Photo._D = D;
+      if (!det.ok) { toast("I couldn't find a house in this photo. Try one taken from the street, in daylight."); }
+      buildMasks();
+    } catch (err) {
+      console.error(err);
+      toast("The detector couldn't load. Check your connection and try again.");
+    } finally {
+      busy = false; box.hidden = true; render();
+    }
+  }
+
+  // label map (work size) → soft full-size alpha per zone, plus the zone's average brightness
+  function buildMasks() {
+    const masks = Photo._D.zoneMasks(det), w = base.width, h = base.height, tmp = mk(w, h), t = tmp.getContext("2d", { willReadFrequently: true });
+    alpha = {}; meanLum = {};
+    const found = [];
+    for (const z of ZONES) {
+      const m = masks[z];
+      if (!m || !m.pixels) continue;
+      t.clearRect(0, 0, w, h); t.imageSmoothingEnabled = true; t.imageSmoothingQuality = "high";
+      t.filter = "blur(1.2px)"; t.drawImage(m.canvas, 0, 0, w, h); t.filter = "none";
+      const d = t.getImageData(0, 0, w, h).data, a = new Uint8Array(w * h);
+      let sum = 0, cnt = 0;
+      for (let i = 0; i < w * h; i++) { a[i] = d[i * 4 + 3]; if (a[i] > 200) { sum += lumOf(basePx[i * 4], basePx[i * 4 + 1], basePx[i * 4 + 2]); cnt++; } }
+      alpha[z] = a; meanLum[z] = cnt ? sum / cnt : 128;
+      found.push(z);
+    }
+    $("#photoFound").innerHTML = found.length ? `<span>Found:</span>${found.map((z) => `<button type="button" class="chip is-on" data-zone="${z}">${z[0].toUpperCase() + z.slice(1)} ✓</button>`).join("")}` : "<span>No roof or siding found. Click the photo to mark areas.</span>";
+  }
+
+  function draw() {
+    queued = false;
+    if (!base) return;
+    if (original || !det) { ctx.drawImage(base, 0, 0); return; }
+    const w = base.width, h = base.height, out = ctx.createImageData(w, h), o = out.data;
+    o.set(basePx);
+    for (const z of ZONES) {
+      const a = alpha[z];
+      if (!a) continue;
+      const [tr, tg, tb] = rgb(colorFor(z)), tl = Math.max(8, lumOf(tr, tg, tb)), mL = Math.max(8, meanLum[z]);
+      // keep the photo's shading: each pixel's brightness relative to the area's average scales the new color
+      for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+        const k = a[i];
+        if (!k) continue;
+        const L = lumOf(basePx[p], basePx[p + 1], basePx[p + 2]);
+        let r = Math.pow(L / mL, 0.9);
+        if (tl > 200) r = 1 - (1 - r) * 0.6; // white products: soften dark texture so they still read as white
+        const f = (k / 255) * 0.94;
+        o[p] = o[p] + (Math.min(255, tr * r) - o[p]) * f;
+        o[p + 1] = o[p + 1] + (Math.min(255, tg * r) - o[p + 1]) * f;
+        o[p + 2] = o[p + 2] + (Math.min(255, tb * r) - o[p + 2]) * f;
+      }
+    }
+    if (showMask) for (const z of ZONES) {
+      const a = alpha[z], c = TINT[z];
+      if (!a) continue;
+      for (let i = 0, p = 0; i < w * h; i++, p += 4) if (a[i] > 128) { o[p] = o[p] * 0.45 + c[0] * 0.55; o[p + 1] = o[p + 1] * 0.45 + c[1] * 0.55; o[p + 2] = o[p + 2] * 0.45 + c[2] * 0.55; }
+    }
+    ctx.putImageData(out, 0, 0);
+  }
+  function render() { if (!queued && mode === "photo") { queued = true; requestAnimationFrame(draw); } }
+
   input.addEventListener("change", () => load(input.files[0]));
   ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
   ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("drag"); }));
   drop.addEventListener("drop", (e) => load(e.dataTransfer.files[0]));
-
-  $$("[data-zone]").forEach((b) => b.addEventListener("click", () => {
-    zone = b.dataset.zone; erasing = false;
-    $$("[data-zone]").forEach((x) => x.classList.toggle("is-on", x === b));
-    $("#eraserBtn").classList.remove("is-on");
-    cat = zone; drawRail(); drawPanel();
-    render();
-  }));
-  $("#eraserBtn").addEventListener("click", (e) => { erasing = !erasing; e.currentTarget.classList.toggle("is-on", erasing); });
-  $("#brushSize").addEventListener("input", (e) => { brush = +e.target.value; });
-  $("#strength").addEventListener("input", (e) => { strength = e.target.value / 100; render(); });
-  $("#maskBtn").addEventListener("click", (e) => { showMask = !showMask; e.currentTarget.classList.toggle("is-on", showMask); render(); });
-  $("#clearZoneBtn").addEventListener("click", () => { if (!base) return; masks[zone].getContext("2d").clearRect(0, 0, base.width, base.height); painted[zone] = false; render(); });
+  $("#maskBtn").addEventListener("click", (e) => { showMask = !showMask; e.currentTarget.classList.toggle("is-on", showMask); e.currentTarget.setAttribute("aria-pressed", showMask); render(); });
   const cmp = $("#compareBtn");
   cmp.addEventListener("pointerdown", (e) => { e.preventDefault(); original = true; render(); });
   ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => cmp.addEventListener(ev, () => { if (original) { original = false; render(); } }));
   $("#newPhotoBtn").addEventListener("click", () => { input.value = ""; input.click(); });
+  // the "Found" chips jump the color panel to that surface
+  $("#photoFound").addEventListener("click", (e) => { const b = e.target.closest("[data-zone]"); if (b) { cat = b.dataset.zone; drawRail(); drawPanel(); } });
 
-  const toImg = (e) => { const r = canvas.getBoundingClientRect(), k = canvas.width / r.width; return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k, k }; };
-  function stroke(a, b) {
-    const m = masks[zone].getContext("2d");
-    m.save();
-    m.globalCompositeOperation = erasing ? "destination-out" : "source-over";
-    m.strokeStyle = m.fillStyle = "#fff"; m.lineCap = m.lineJoin = "round"; m.lineWidth = brush * b.k;
-    m.beginPath(); m.moveTo(a.x, a.y); m.lineTo(b.x, b.y); m.stroke();
-    m.beginPath(); m.arc(b.x, b.y, (brush * b.k) / 2, 0, Math.PI * 2); m.fill();
-    m.restore();
-    if (!erasing) painted[zone] = true;
-    render();
-  }
-  canvas.addEventListener("pointerdown", (e) => { if (!base) return; drawing = true; canvas.setPointerCapture(e.pointerId); last = toImg(e); stroke(last, last); });
-  canvas.addEventListener("pointermove", (e) => {
-    const sr = stageEl.getBoundingClientRect();
-    cursor.style.left = e.clientX - sr.left + "px"; cursor.style.top = e.clientY - sr.top + "px";
-    cursor.style.width = cursor.style.height = brush + "px";
-    cursor.style.borderColor = erasing ? "#ff8a7a" : `rgb(${TINT[zone]})`;
-    if (!drawing) return;
-    const p = toImg(e); stroke(last, p); last = p;
+  // click to fix: pick what the clicked area really is; similar connected patches change with it
+  canvas.addEventListener("click", (e) => {
+    if (!det || busy) return;
+    const r = canvas.getBoundingClientRect();
+    fixAt = { x: ((e.clientX - r.left) / r.width) * det.W, y: ((e.clientY - r.top) / r.height) * det.H };
+    const pop = $("#photoFix"), sr = $("#photoStage").getBoundingClientRect();
+    pop.hidden = false;
+    pop.style.left = Math.min(sr.width - 330, Math.max(8, e.clientX - sr.left - 160)) + "px";
+    pop.style.top = Math.min(sr.height - 56, e.clientY - sr.top + 14) + "px";
+    const cur = det.labels[det.seg[Math.min(det.H - 1, fixAt.y | 0) * det.W + Math.min(det.W - 1, fixAt.x | 0)]];
+    const name = ["none", "roof", "siding", "trim", "door", "none", "none"][cur];
+    $$("#photoFix [data-fix]").forEach((b) => b.classList.toggle("is-on", b.dataset.fix === name));
   });
-  ["pointerup", "pointercancel"].forEach((ev) => canvas.addEventListener(ev, () => { drawing = false; }));
-  canvas.addEventListener("pointerenter", () => { cursor.hidden = false; });
-  canvas.addEventListener("pointerleave", () => { cursor.hidden = true; });
+  $("#photoFix").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fix]");
+    if (!b || !fixAt) return;
+    const Z = Photo._D.ZONE;
+    Photo._D.reassign(det, fixAt.x, fixAt.y, b.dataset.fix === "none" ? Z.window : Z[b.dataset.fix]);
+    $("#photoFix").hidden = true; fixAt = null;
+    buildMasks(); render();
+  });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") $("#photoFix").hidden = true; });
 
-  const lum = (hex) => { const n = parseInt(hex.slice(1), 16); return (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255; };
-  function tint(z) {
-    const color = colorFor(z), t = tmp.getContext("2d");
-    t.globalCompositeOperation = "source-over"; t.clearRect(0, 0, tmp.width, tmp.height);
-    t.fillStyle = color; t.fillRect(0, 0, tmp.width, tmp.height);
-    t.globalCompositeOperation = "destination-in"; t.drawImage(masks[z], 0, 0);
-    ctx.globalAlpha = strength; ctx.globalCompositeOperation = "color"; ctx.drawImage(tmp, 0, 0);
-    const L = lum(color);
-    if (L < 0.42) { ctx.globalCompositeOperation = "multiply"; ctx.globalAlpha = strength * Math.min(1, (0.42 - L) / 0.42 + 0.15); ctx.drawImage(tmp, 0, 0); }
-    else if (L > 0.6) { ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = strength * ((L - 0.6) / 0.4) * 0.85; ctx.drawImage(tmp, 0, 0); }
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
-  }
-  function draw() {
-    queued = false;
-    if (!base) return;
-    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
-    ctx.drawImage(base, 0, 0);
-    if (original) return;
-    ZONES.forEach((z) => { if (painted[z]) tint(z); });
-    if (showMask) ZONES.forEach((z) => {
-      if (!painted[z]) return;
-      const t = tmp.getContext("2d");
-      t.globalCompositeOperation = "source-over"; t.clearRect(0, 0, tmp.width, tmp.height);
-      t.fillStyle = `rgba(${TINT[z]},${z === zone ? 0.55 : 0.25})`; t.fillRect(0, 0, tmp.width, tmp.height);
-      t.globalCompositeOperation = "destination-in"; t.drawImage(masks[z], 0, 0);
-      ctx.drawImage(tmp, 0, 0);
-    });
-  }
-  function render() { if (!queued && mode === "photo") { queued = true; requestAnimationFrame(draw); } }
   return {
     render,
     hasImage: () => !!base,
-    snapshot: () => new Promise((res) => { draw(); canvas.toBlob(res, "image/jpeg", 0.88); }),
+    snapshot: () => new Promise((res) => { draw(); canvas.toBlob(res, "image/jpeg", 0.9); }),
   };
 })();
 

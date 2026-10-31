@@ -7,7 +7,7 @@ Static site plus a tiny Node server (`server.js`) for the lead form. No build st
 |---|---|
 | `index.html` | Full-screen 3D walkthrough of a full roof + siding job (the rest of the page unlocks once it's scrolled through), then who I am + what I do, About, and the lead form |
 | `roofing.html`, `siding.html`, `windows.html`, `gutters.html` | A full-screen 3D walkthrough of that trade, every step explained, then a checklist link and CTA |
-| `design.html` | 3D exterior designer + paint-your-photo |
+| `design.html` | 3D exterior designer + your-photo mode: upload a photo and the roof, siding, trim and doors are found automatically (`js/photo-detect.js`); the color panel recolors them, keeping the photo's light and texture; click any area to correct it |
 | `estimate.html` | Roof price by address: the address opens a movable aerial map, the homeowner clicks their house, the county GIS outline loads as a polygon they can trace and adjust, priced at 7/12 pitch + 8% waste for three shingle lines with tax. Plus the ballpark estimator for other work |
 | `insurance.html` | Insurance claims guide + "Should I file?" check |
 | `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device). Adds to Apple Reminders / to-do apps / calendar, prints on one page, and has a "send me a photo when done" form |
@@ -82,6 +82,13 @@ Code in `js/builder/`:
 | `app.js` | Tools, catalog, inspector, floors, files, prints and "Send to Colin" |
 
 Designs autosave in the browser; "Save file" / "Open" move them between computers. The original plan for it is in [`docs/cad-builder-plan.md`](docs/cad-builder-plan.md).
+
+## Photo auto-detect (`js/photo-detect.js`)
+1. SegFormer-B2 (ADE20K) runs in the browser through transformers.js (loaded from jsDelivr; the 29 MB model comes from Hugging Face once, then the browser caches it; WebGPU when available, otherwise WebAssembly) to find the house, windows, doors, sky and trees.
+2. SLIC superpixels give clean edges.
+3. Roof and siding are split by color/texture prototypes: patches along the top edge of the house are roof samples, the lower walls are siding samples, and each patch takes the nearest one, smoothed with its neighbors. Light neutral patches become trim; brick/stone and window glass are left as they are.
+
+Recoloring keeps each pixel's brightness relative to its area, so shingles, laps, shadows and lighting survive the color change.
 
 ## Lead form
 `js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.

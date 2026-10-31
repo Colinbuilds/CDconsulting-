@@ -1181,3 +1181,15 @@ main > .bd:first-child { padding-top: 0; }
 .elev-stack figcaption { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 8pt; }
 .split-sheet { grid-template-columns: minmax(0, 1fr) 2.6in !important; }
 .bd-walkhelp .btn { margin-top: .5rem; color: #fff; border-color: rgba(255, 255, 255, .4); }
+
+/* photo mode: automatic areas */
+.photo-stage { position: relative; }
+.photo-stage canvas { cursor: pointer; }
+.photo-busy { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(250, 249, 246, .55); backdrop-filter: blur(2px); z-index: 3; }
+.photo-busy-card { display: grid; gap: .6rem; width: min(360px, 86%); padding: 1.1rem 1.2rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+.photo-busy-card i { height: 6px; border-radius: 6px; background: var(--line); position: relative; overflow: hidden; }
+.photo-busy-card i b { position: absolute; inset: 0 auto 0 0; width: 4%; background: var(--blue); border-radius: 6px; transition: width .3s; }
+.photo-busy-card small { color: var(--muted); font-size: .86rem; }
+.photo-fix { position: absolute; z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; padding: .55rem .7rem; border-radius: 12px; background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, .25); max-width: 340px; }
+.photo-fix span { font-size: .86rem; color: var(--muted); margin-right: .2rem; }
+#photoFound span { font-size: .9rem; color: var(--muted); }
