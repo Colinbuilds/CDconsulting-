@@ -750,7 +750,7 @@ main > :first-child:not(.proc) { padding-top: calc(var(--nav-h) + var(--section)
 .rq-photos { display: grid; gap: 1rem; min-width: 0; }
 .rq-photos figure { margin: 0; display: grid; gap: .45rem; }
 .rq-photos figcaption { font-size: .7rem; letter-spacing: .08em; color: var(--faint); }
-.rq-photos img { width: 100%; height: auto; aspect-ratio: 640 / 420; object-fit: cover; border-radius: var(--r-lg); background: var(--surface); }
+.rq-photos figure img { width: 100%; height: auto; aspect-ratio: 640 / 420; object-fit: cover; border-radius: var(--r-lg); background: var(--surface); }
 #rqStreetFig img { aspect-ratio: 640 / 400; }
 .rq-map { position: relative; border-radius: var(--r-lg); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
 .rq-map img { border-radius: 0; transition: opacity .4s; }
@@ -827,3 +827,36 @@ main > :first-child:not(.proc) { padding-top: calc(var(--nav-h) + var(--section)
 .rq-log-list small { grid-column: 2; font-size: .76rem; color: #8f95a0; }
 .rq-log-list li.is-ok small { color: #a5d9bd; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* movable map + trace tool */
+.rq-mapwrap { position: relative; border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); background: #1b1f26; }
+.rq-leaflet { height: min(68vh, 560px); min-height: 380px; width: 100%; font: inherit; }
+.rq-leaflet.is-marking { cursor: crosshair; }
+.rq-leaflet.is-marking .leaflet-grab { cursor: crosshair; }
+.rq-maptools { position: absolute; z-index: 500; top: 12px; right: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; max-width: calc(100% - 70px); }
+.rq-maptools .chip { background: rgba(255, 255, 255, .94); color: #121418; border-color: transparent; font-size: .82rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+.rq-maptools .chip[hidden] { display: none; }
+.rq-mapread { position: absolute; z-index: 500; left: 12px; bottom: 26px; padding: .55rem .9rem; border-radius: 10px; background: rgba(255, 255, 255, .95); color: #121418; font-size: .95rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); max-width: calc(100% - 24px); }
+.rq-mapread b { font-size: 1.05rem; }
+.rq-poly { fill: #3c6cf0; fill-opacity: .2; stroke: #fff; stroke-width: 3; stroke-linejoin: round; }
+.rq-poly.is-open { fill: none; stroke-dasharray: 8 6; }
+.rq-v { background: #fff; border: 3px solid #2f5bdc; border-radius: 50%; box-shadow: 0 1px 6px rgba(0, 0, 0, .5); cursor: move; }
+.rq-v.is-first { background: #2f5bdc; border-color: #fff; width: 22px !important; height: 22px !important; margin: -11px 0 0 -11px !important; cursor: pointer; }
+.rq-len { background: none; border: 0; }
+.rq-len span { display: inline-block; transform: translate(-50%, -50%); padding: .15rem .45rem; border-radius: 6px; background: rgba(18, 20, 24, .85); color: #fff; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: grab; }
+.rq-house span { display: block; width: 30px; height: 30px; background: #ef7563; border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 8px rgba(0, 0, 0, .5); }
+.rq-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; counter-reset: s; }
+.rq-steps li { counter-increment: s; display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); column-gap: .8rem; padding: .9rem 0; border-top: 1px solid var(--line); color: var(--faint); }
+.rq-steps li::before { content: counter(s); grid-row: span 2; width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-2); font-weight: 600; }
+.rq-steps li b { font-size: 1.1rem; font-weight: 600; }
+.rq-steps li span { font-size: .98rem; }
+.rq-steps li.is-on { color: var(--text); }
+.rq-steps li.is-on::before { background: var(--blue); border-color: var(--blue); color: #fff; }
+.rq-steps li.is-done { color: var(--muted); }
+.rq-steps li.is-done::before { content: "✓"; background: var(--ok); border-color: var(--ok); color: #fff; }
+/* the site-wide img/svg rules break Leaflet's tiles */
+.leaflet-container img, .leaflet-container svg { max-width: none !important; max-height: none !important; display: inline; }
+.leaflet-container .leaflet-tile { display: block; }
+.rq-len i { display: block; width: 9px; height: 9px; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(18, 20, 24, .85); border: 1px solid #fff; cursor: grab; }
+.rq-mapwrap .leaflet-control-attribution { font-size: 10px; }
+@media (max-width: 639px) { .rq-mapread { bottom: 34px; font-size: .88rem; } .rq-leaflet { height: 62vh; } }

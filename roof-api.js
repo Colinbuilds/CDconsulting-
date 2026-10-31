@@ -231,7 +231,7 @@ export async function handleRoofApi(req, res, json) {
       res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
       const send = (o) => res.write(JSON.stringify(o) + "\n");
       try {
-        const r = await roof(lat, lon, p.get("tap") ? 12 : 45, (text, state) => send({ step: text, state }));
+        const r = await roof(lat, lon, p.get("tap") ? 22 : 45, (text, state) => send({ step: text, state }));
         send(r ? { ok: true, ...r } : { ok: false, status: 404, error: "No building outline found there" });
       } catch (e) {
         console.error("roof api", e.message);
