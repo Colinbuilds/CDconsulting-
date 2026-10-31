@@ -15,7 +15,7 @@ import { handleRoofApi } from "./roof-api.js";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
-const PAGES = ["index.html", "roofing.html", "siding.html", "windows.html", "gutters.html", "design.html", "estimate.html", "insurance.html", "work.html", "checklist.html", "commercial.html"];
+const PAGES = ["index.html", "roofing.html", "siding.html", "windows.html", "gutters.html", "design.html", "estimate.html", "insurance.html", "work.html", "checklist.html", "commercial.html", "builder.html"];
 const PUBLIC = [...PAGES, "css", "js", "images"];
 const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",

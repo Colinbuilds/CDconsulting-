@@ -11,6 +11,7 @@ Static site plus a tiny Node server (`server.js`) for the lead form. No build st
 | `estimate.html` | Roof price by address: the address opens a movable aerial map, the homeowner clicks their house, the county GIS outline loads as a polygon they can trace and adjust, priced at 7/12 pitch + 8% waste for three shingle lines with tax. Plus the ballpark estimator for other work |
 | `insurance.html` | Insurance claims guide + "Should I file?" check |
 | `checklist.html` | Homeowner checklist (before / during / after, filter by trade, saves ticks on the device). Adds to Apple Reminders / to-do apps / calendar, prints on one page, and has a "send me a photo when done" form |
+| `builder.html` | Building designer: draw walls in real assemblies, doors, windows, floors, roofs, decks, porches, chimneys, roof items, plumbing / HVAC / electrical, appliances and furniture; live 3D, walk-through, and a printable plan set with a materials takeoff |
 | `commercial.html` | Commercial flat-roof planner: membrane, parapet, walls; place RTUs, exhaust fans, skylights, solar, hatches, vents, walkway pads and drains in 3D, with live checks for edge clearance, curb spacing and drains |
 | `work.html` | Past projects |
 
@@ -68,8 +69,19 @@ Railway variables (all optional):
 
 Esri World Imagery is shown with attribution. For heavy commercial use, create a free ArcGIS Location Platform account, or set the Google key to use Google imagery instead.
 
-## CAD builder
-The plan for the building designer / blueprint maker is in [`docs/cad-builder-plan.md`](docs/cad-builder-plan.md).
+## Building designer (`builder.html`)
+Code in `js/builder/`:
+
+| File | What it does |
+|---|---|
+| `core.js` | The document (levels, walls on shared corners, openings, rooms found from the wall graph, roofs, items, runs), undo/redo, templates, materials takeoff |
+| `catalog.js` | Wall assemblies layer by layer, door/window styles, every placeable item with its plan symbol |
+| `plan.js` | The 2D plan: editor (snap to corners, walls, grid and 45°; draw, place, drag) and the printed floor plans |
+| `scene.js` | The 3D model, orbit + walk-through viewer, and the line-drawing elevations / roof plan for prints |
+| `prints.js` | The plan set: cover, floor plans at true scale, elevations, roof plan, plumbing/HVAC/electrical plans, wall assemblies, schedules, materials takeoff |
+| `app.js` | Tools, catalog, inspector, floors, files, prints and "Send to Colin" |
+
+Designs autosave in the browser; "Save file" / "Open" move them between computers. The original plan for it is in [`docs/cad-builder-plan.md`](docs/cad-builder-plan.md).
 
 ## Lead form
 `js/lead.js` posts to `/api/lead` (`server.js`), which accepts up to 8 photos (resized in the browser first), checks a spam honeypot and rate-limits by IP.
